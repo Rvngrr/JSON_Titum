@@ -106,7 +106,7 @@ This implementation plan covers the full-stack development of the AI-Powered Job
     - **Property 11: Job Description Requires At Least One Skill** - submission rejected if zero required skills
     - **Validates: Requirements 4.2**
 
-- [ ] 5. Applicant Skill Profile Management
+- [x] 5. Applicant Skill Profile Management
   - [x] 5.1 Create ResumeUpload component with Supabase Storage integration
     - Build drag-and-drop upload UI with client-side validation (PDF/DOCX, max 5MB)
     - Upload file to Supabase Storage `resumes/{user_id}/{filename}` via client SDK
@@ -121,13 +121,13 @@ This implementation plan covers the full-stack development of the AI-Powered Job
     - Save extracted skills to `skill_profiles` and `skills` tables via Supabase admin client
     - _Requirements: 3.1, 3.3_
 
-  - [~] 5.3 Create SkillProfile component with manual skill management
+  - [x] 5.3 Create SkillProfile component with manual skill management
     - Display current skills with source indicator (parsed vs manual)
     - Implement add/remove skill functionality via Supabase client SDK (RLS enforced)
     - Update skill_profile `updated_at` on changes to trigger recalculation
     - _Requirements: 3.2, 3.4_
 
-  - [~] 5.4 Create Applicant Dashboard page integrating profile and navigation
+  - [x] 5.4 Create Applicant Dashboard page integrating profile and navigation
     - Build applicant dashboard layout with navigation to profile, job listings
     - Integrate SkillProfile and ResumeUpload components on profile page
     - _Requirements: 3.4, 9.1_
@@ -136,24 +136,24 @@ This implementation plan covers the full-stack development of the AI-Powered Job
     - **Property 4: Skill Profile Round-Trip Consistency** - adding a skill then retrieving profile includes that skill with original attributes
     - **Validates: Requirements 3.2**
 
-- [~] 6. Checkpoint - Ensure profile and job management work
+- [x] 6. Checkpoint - Ensure profile and job management work
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 7. AI Match Engine
-  - [~] 7.1 Implement Match_Engine service (`src/lib/ai/match-engine.ts`)
+- [x] 7. AI Match Engine
+  - [x] 7.1 Implement Match_Engine service (`src/lib/ai/match-engine.ts`)
     - Extract required skills (weight 2x) and preferred skills (weight 1x) from JobDescription
     - Use OpenAI for semantic/fuzzy skill matching (e.g., "React" matches "React.js")
     - Calculate weighted score and normalize to 0-100 integer
     - Return MatchResult with matchPercentage, matchedSkills, missingSkills
     - _Requirements: 5.1, 5.2, 5.3_
 
-  - [~] 7.2 Create match calculation API route (`/api/match/calculate`)
+  - [x] 7.2 Create match calculation API route (`/api/match/calculate`)
     - Accept applicant_id and job_description_id (or batch mode for all applicants/jobs)
     - Call Match_Engine service and upsert results to `match_results` table via admin client
     - Validate caller authorization (only internal/edge function calls or authenticated users)
     - _Requirements: 5.1, 5.2_
 
-  - [~] 7.3 Create Supabase Edge Function for background match recalculation
+  - [x] 7.3 Create Supabase Edge Function for background match recalculation
     - Implement `calculate-matches` Edge Function triggered by database webhook on job/profile update
     - On job publish/update: recalculate matches for all applicants against that job
     - On profile update: recalculate matches for that applicant against all published jobs
@@ -172,8 +172,8 @@ This implementation plan covers the full-stack development of the AI-Powered Job
     - **Property 7: Required Skills Weight Dominance** - a matched required skill contributes more than the same skill marked as preferred
     - **Validates: Requirements 5.3**
 
-- [ ] 8. AI Recommendation Engine
-  - [~] 8.1 Implement Recommendation_Engine service (`src/lib/ai/recommendation-engine.ts`)
+- [x] 8. AI Recommendation Engine
+  - [x] 8.1 Implement Recommendation_Engine service (`src/lib/ai/recommendation-engine.ts`)
     - Analyze gap between Skill_Profile and Job_Description requirements using OpenAI
     - Categorize each suggestion as "skill_to_add" or "skill_to_improve"
     - Score each suggestion by potential impact (1-10)
@@ -181,7 +181,7 @@ This implementation plan covers the full-stack development of the AI-Powered Job
     - Handle edge case: return "fully matched" message when match is 100%
     - _Requirements: 7.1, 7.2, 7.3, 7.5, 7.6_
 
-  - [~] 8.2 Create recommendation generation API route (`/api/recommendations/generate`)
+  - [x] 8.2 Create recommendation generation API route (`/api/recommendations/generate`)
     - Accept applicant_id and job_description_id
     - Call Recommendation_Engine service and persist results to `recommendations` table
     - Validate that the requesting user is the applicant (or internal call)
@@ -191,23 +191,23 @@ This implementation plan covers the full-stack development of the AI-Powered Job
     - **Property 3: Recommendation Completeness** - at least one suggestion produced when match_percentage < 100
     - **Validates: Requirements 7.4, 7.5**
 
-- [~] 9. Checkpoint - Ensure AI engine tests pass
+- [x] 9. Checkpoint - Ensure AI engine tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 10. Job Listings and Match Display (Applicant Views)
-  - [~] 10.1 Create JobListings page displaying published jobs with match percentages
+- [x] 10. Job Listings and Match Display (Applicant Views)
+  - [x] 10.1 Create JobListings page displaying published jobs with match percentages
     - Fetch published job_descriptions via Supabase client SDK (RLS allows applicants to view published)
     - Fetch own match_results via Supabase client SDK (RLS allows own matches)
     - Display title, summary, and MatchPercentageBadge for each job
     - Default sort by match_percentage descending
     - _Requirements: 5.4, 5.5, 9.1_
 
-  - [~] 10.2 Implement search and filter functionality on job listings
+  - [x] 10.2 Implement search and filter functionality on job listings
     - Add keyword search (title/description), skill filter, and match percentage range filter
     - Display "no results" message with suggestion to broaden criteria when filters yield empty results
     - _Requirements: 9.2, 9.3_
 
-  - [~] 10.3 Create JobDetail page with match info and recommendations
+  - [x] 10.3 Create JobDetail page with match info and recommendations
     - Display full job details (title, description, required skills, qualifications)
     - Show applicant's match_percentage prominently
     - Fetch and display AI recommendations specific to that job
@@ -215,7 +215,7 @@ This implementation plan covers the full-stack development of the AI-Powered Job
     - Provide navigation to browse between job detail pages without returning to listings
     - _Requirements: 5.6, 8.1, 8.2, 8.3, 8.4_
 
-  - [~] 10.4 Create RecommendationsList component
+  - [x] 10.4 Create RecommendationsList component
     - Display suggestions categorized as "Skill to Add" or "Skill to Improve"
     - Order by impact score (highest first)
     - Show "fully matched" message when match is 100%
@@ -225,19 +225,19 @@ This implementation plan covers the full-stack development of the AI-Powered Job
     - **Property 12: Search Filter Correctness** - all returned results match applied filter criteria
     - **Validates: Requirements 9.2**
 
-- [ ] 11. Applicant Rankings (HR Views)
-  - [~] 11.1 Create ApplicantRankings page for HR users
+- [x] 11. Applicant Rankings (HR Views)
+  - [x] 11.1 Create ApplicantRankings page for HR users
     - Fetch match_results for a selected job via Supabase client SDK (RLS allows HR to see matches for own jobs)
     - Display ranked list with rank position, applicant name, and match_percentage
     - Sort by match_percentage descending
     - _Requirements: 6.1, 6.2, 6.5_
 
-  - [~] 11.2 Implement tie-handling in rankings display
+  - [x] 11.2 Implement tie-handling in rankings display
     - Assign same rank to applicants with equal match_percentage
     - Sort tied applicants alphabetically by name
     - _Requirements: 6.3_
 
-  - [~] 11.3 Integrate rankings into HR Dashboard with job selector
+  - [x] 11.3 Integrate rankings into HR Dashboard with job selector
     - Add job description dropdown/selector to navigate between rankings for different postings
     - Show "updated" indicator when rankings change after recalculation
     - _Requirements: 6.1, 6.4, 6.5_
@@ -267,19 +267,19 @@ This implementation plan covers the full-stack development of the AI-Powered Job
     - Test edge case: 100% match shows "fully matched" message
     - _Requirements: 7.1, 7.4, 7.5_
 
-  - [~] 12.4 Add loading states, error boundaries, and empty state handling
+  - [x] 12.4 Add loading states, error boundaries, and empty state handling
     - Implement loading spinners for async operations (match calculation, AI calls)
     - Add error boundaries for graceful failure handling
     - Display appropriate empty states (no jobs, no matches, no recommendations)
     - _Requirements: 9.3_
 
-  - [~] 12.5 Final UI polish: responsive layout, consistent styling, and navigation
+  - [x] 12.5 Final UI polish: responsive layout, consistent styling, and navigation
     - Ensure responsive design across device sizes
     - Consistent styling with Tailwind CSS
     - Verify navigation flow between all pages (applicant and HR paths)
     - _Requirements: 8.4_
 
-- [~] 13. Final Checkpoint - Ensure all tests pass
+- [x] 13. Final Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

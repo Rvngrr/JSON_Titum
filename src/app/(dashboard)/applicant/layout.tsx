@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 import ErrorBoundary from "@/components/shared/ErrorBoundary";
+import { useState } from "react";
 
 const NAV_ITEMS = [
   {
-    href: "/hr",
+    href: "/applicant",
     label: "Dashboard",
-    exactMatch: true,
     icon: (
       <svg
         className="h-5 w-5"
@@ -28,9 +27,8 @@ const NAV_ITEMS = [
     ),
   },
   {
-    href: "/hr/jobs/new",
-    label: "Create New Posting",
-    exactMatch: false,
+    href: "/applicant/profile",
+    label: "My Profile",
     icon: (
       <svg
         className="h-5 w-5"
@@ -43,44 +41,63 @@ const NAV_ITEMS = [
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth={2}
-          d="M12 4v16m8-8H4"
+          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+        />
+      </svg>
+    ),
+  },
+  {
+    href: "/applicant/jobs",
+    label: "Job Listings",
+    icon: (
+      <svg
+        className="h-5 w-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
         />
       </svg>
     ),
   },
 ];
 
-export default function HRLayout({
+export default function ApplicantLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const isActive = (item: (typeof NAV_ITEMS)[0]) => {
-    if (item.exactMatch) {
-      return pathname === item.href;
-    }
-    return pathname.startsWith(item.href);
-  };
-
   const navContent = (
     <>
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">HR Portal</h2>
+      <h2 className="mb-4 text-lg font-semibold text-gray-900">
+        Applicant Portal
+      </h2>
       <ul className="space-y-1">
         {NAV_ITEMS.map((item) => {
-          const active = isActive(item);
+          const isActive =
+            item.href === "/applicant"
+              ? pathname === "/applicant"
+              : pathname.startsWith(item.href);
+
           return (
             <li key={item.href}>
               <Link
                 href={item.href}
                 className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                  active
+                  isActive
                     ? "bg-blue-100 text-blue-700"
                     : "text-gray-700 hover:bg-gray-200 hover:text-gray-900"
                 }`}
-                aria-current={active ? "page" : undefined}
+                aria-current={isActive ? "page" : undefined}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {item.icon}
@@ -97,7 +114,9 @@ export default function HRLayout({
     <div className="flex min-h-screen">
       {/* Mobile header */}
       <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 md:hidden">
-        <h2 className="text-lg font-semibold text-gray-900">HR Portal</h2>
+        <h2 className="text-lg font-semibold text-gray-900">
+          Applicant Portal
+        </h2>
         <button
           type="button"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -154,12 +173,12 @@ export default function HRLayout({
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <nav aria-label="HR dashboard navigation">{navContent}</nav>
+        <nav aria-label="Applicant dashboard navigation">{navContent}</nav>
       </aside>
 
       {/* Desktop sidebar */}
       <aside className="hidden w-64 shrink-0 border-r border-gray-200 bg-gray-50 p-6 md:block">
-        <nav aria-label="HR dashboard navigation">{navContent}</nav>
+        <nav aria-label="Applicant dashboard navigation">{navContent}</nav>
       </aside>
 
       {/* Main content */}

@@ -165,8 +165,16 @@ export default function JobDescriptionList() {
                 </td>
                 <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
                   <Link
+                    href={`/hr/jobs/${job.id}/rankings`}
+                    className="mr-3 font-medium text-indigo-600 hover:text-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    aria-label={`View rankings for ${job.title}`}
+                  >
+                    Rankings
+                  </Link>
+                  <Link
                     href={`/hr/jobs/${job.id}/edit`}
                     className="mr-3 font-medium text-blue-600 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    aria-label={`Edit ${job.title}`}
                   >
                     Edit
                   </Link>
