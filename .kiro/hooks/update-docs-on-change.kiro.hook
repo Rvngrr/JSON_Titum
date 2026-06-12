@@ -1,0 +1,43 @@
+{
+  "enabled": true,
+  "name": "Update Docs on Source Change",
+  "description": "When source files or config files are edited, the agent updates the README.md or /docs folder to reflect the changes.",
+  "version": "2",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "*.js",
+      "*.ts",
+      "*.py",
+      "*.json",
+      "*.jsx",
+      "*.tsx",
+      "*.mjs",
+      "*.cjs",
+      "*.yaml",
+      "*.yml",
+      "*.toml",
+      "*.cfg",
+      "*.ini",
+      "*.env",
+      "*.sh",
+      "*.bat",
+      "*.ps1",
+      "*.go",
+      "*.rs",
+      "*.java",
+      "*.cs",
+      "*.rb",
+      "*.php",
+      "*.cpp",
+      "*.c",
+      "*.h",
+      "*.hpp",
+      "*.md"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A source or config file was just edited. Review the change and update the project documentation accordingly:\n\n1. If a /docs folder exists, update the relevant doc file there.\n2. Otherwise, update the README.md to reflect the current state of the code.\n\nInclude any new or changed functionality, usage instructions, API details, or configuration changes. Keep documentation concise, accurate, and up to date."
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Git Pull on Prompt",
+  "description": "Automatically runs git pull when a prompt is submitted to ensure the local repo is up to date with the remote.",
+  "version": "1",
+  "when": {
+    "type": "promptSubmit"
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "git pull"
+  }
+}

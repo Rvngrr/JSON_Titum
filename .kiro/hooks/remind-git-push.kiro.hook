@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Remind to Git Push",
+  "description": "After each prompt completes, reminds the user to push their code to the remote repository unless they've said otherwise.",
+  "version": "1",
+  "when": {
+    "type": "agentStop"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Check the git status of the repo. If there are any new or modified files, remind the user to push their changes to the remote repository. Ask them: \"Would you like me to commit and push these changes?\" Unless the user has explicitly said not to push in this conversation, always ask."
+  }
+}
