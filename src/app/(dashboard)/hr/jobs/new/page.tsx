@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import JobDescriptionForm from "@/components/hr/JobDescriptionForm";
 
 export default function CreateJobPage() {

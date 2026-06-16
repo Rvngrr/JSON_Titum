@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import JobDescriptionList from "@/components/hr/JobDescriptionList";
 
 export default function HRDashboardPage() {

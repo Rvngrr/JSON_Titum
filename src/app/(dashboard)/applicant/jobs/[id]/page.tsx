@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import JobDetail from "@/components/applicant/JobDetail";
 
 export default async function JobDetailPage({

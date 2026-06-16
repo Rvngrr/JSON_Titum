@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import JobRankingsSelector from "@/components/hr/JobRankingsSelector";
 
 export default function RankingsOverviewPage() {

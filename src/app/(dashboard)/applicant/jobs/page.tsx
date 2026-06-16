@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import JobListings from "@/components/applicant/JobListings";
 
 export default function ApplicantJobsPage() {
