@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ErrorBoundary from "@/components/shared/ErrorBoundary";
+import LogoutButton from "@/components/shared/LogoutButton";
 import { useState } from "react";
 
 const NAV_ITEMS = [
@@ -77,37 +78,42 @@ export default function ApplicantLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navContent = (
-    <>
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">
-        Applicant Portal
-      </h2>
-      <ul className="space-y-1">
-        {NAV_ITEMS.map((item) => {
-          const isActive =
-            item.href === "/applicant"
-              ? pathname === "/applicant"
-              : pathname.startsWith(item.href);
+    <div className="flex h-full flex-col">
+      <div>
+        <h2 className="mb-4 text-lg font-semibold text-gray-900">
+          Applicant Portal
+        </h2>
+        <ul className="space-y-1">
+          {NAV_ITEMS.map((item) => {
+            const isActive =
+              item.href === "/applicant"
+                ? pathname === "/applicant"
+                : pathname.startsWith(item.href);
 
-          return (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-blue-100 text-blue-700"
-                    : "text-gray-700 hover:bg-gray-200 hover:text-gray-900"
-                }`}
-                aria-current={isActive ? "page" : undefined}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {item.icon}
-                {item.label}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </>
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-blue-100 text-blue-700"
+                      : "text-gray-700 hover:bg-gray-200 hover:text-gray-900"
+                  }`}
+                  aria-current={isActive ? "page" : undefined}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.icon}
+                  {item.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+      <div className="mt-auto border-t border-gray-200 pt-4">
+        <LogoutButton />
+      </div>
+    </div>
   );
 
   return (
@@ -173,12 +179,12 @@ export default function ApplicantLayout({
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <nav aria-label="Applicant dashboard navigation">{navContent}</nav>
+        <nav className="h-full" aria-label="Applicant dashboard navigation">{navContent}</nav>
       </aside>
 
       {/* Desktop sidebar */}
       <aside className="hidden w-64 shrink-0 border-r border-gray-200 bg-gray-50 p-6 md:block">
-        <nav aria-label="Applicant dashboard navigation">{navContent}</nav>
+        <nav className="h-full" aria-label="Applicant dashboard navigation">{navContent}</nav>
       </aside>
 
       {/* Main content */}

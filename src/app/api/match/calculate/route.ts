@@ -207,7 +207,7 @@ async function fetchApplicantSkills(
     .from("skill_profiles")
     .select("id")
     .eq("user_id", applicantId)
-    .single();
+    .maybeSingle();
 
   if (!skillProfile) {
     return [];

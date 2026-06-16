@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import MatchPercentageBadge from "@/components/applicant/MatchPercentageBadge";
+import ApplyButton from "@/components/applicant/ApplyButton";
+import ApplicationStatusBadge from "@/components/applicant/ApplicationStatusBadge";
 import RecommendationsList from "@/components/applicant/RecommendationsList";
 import type {
   JobDescription,
@@ -31,6 +33,7 @@ export default function JobDetail({ jobId }: JobDetailProps) {
     nextId: null,
   });
 
+  const [hasApplied, setHasApplied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
@@ -42,23 +45,7 @@ export default function JobDetail({ jobId }: JobDetailProps) {
       setRecommendationsError(null);
 
       try {
-        const supabase = createClient();
-
-        // First check if recommendations already exist
-        const { data: existingRecs } = await supabase
-          .from("recommendations")
-          .select("*")
-          .eq("applicant_id", applicantId)
-          .eq("job_description_id", jobDescriptionId)
-          .order("impact_score", { ascending: false });
-
-        if (existingRecs && existingRecs.length > 0) {
-          setRecommendations(existingRecs as Recommendation[]);
-          setRecommendationsLoading(false);
-          return;
-        }
-
-        // Trigger recommendation generation if not yet calculated
+        // Always regenerate recommendations to reflect current skills
         const response = await fetch("/api/recommendations/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -67,6 +54,13 @@ export default function JobDetail({ jobId }: JobDetailProps) {
             job_description_id: jobDescriptionId,
           }),
         });
+
+        if (response.status === 404) {
+          // No skill profile or job skills yet — not an error, just no recommendations available
+          setRecommendations([]);
+          setRecommendationsLoading(false);
+          return;
+        }
 
         const data = await response.json();
 
@@ -136,10 +130,26 @@ export default function JobDetail({ jobId }: JobDetailProps) {
           .select("*")
           .eq("applicant_id", user.id)
           .eq("job_description_id", jobId)
-          .single();
+          .maybeSingle();
 
         if (matchData) {
           setMatchResult(matchData as MatchResult);
+        }
+
+        // Check if the applicant has already applied to this job
+        try {
+          const { data: applicationData } = await supabase
+            .from("applications")
+            .select("id")
+            .eq("applicant_id", user.id)
+            .eq("job_description_id", jobId)
+            .maybeSingle();
+
+          if (applicationData) {
+            setHasApplied(true);
+          }
+        } catch {
+          // Graceful degradation: if status fetch fails, default to not_applied (idle state)
         }
 
         // Fetch adjacent jobs for prev/next navigation
@@ -311,20 +321,31 @@ export default function JobDetail({ jobId }: JobDetailProps) {
       <header className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">{job.title}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-gray-900">{job.title}</h1>
+              <ApplicationStatusBadge applied={hasApplied} />
+            </div>
             <p className="mt-1 text-sm text-gray-500">
               Posted {new Date(job.created_at).toLocaleDateString()}
             </p>
           </div>
-          <div className="ml-4 flex flex-col items-end">
-            <span className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
-              Your Match
-            </span>
-            {matchResult ? (
-              <MatchPercentageBadge percentage={matchResult.match_percentage} />
-            ) : (
-              <span className="text-sm text-gray-400">Not calculated</span>
-            )}
+          <div className="ml-4 flex flex-col items-end gap-3">
+            <div className="flex flex-col items-end">
+              <span className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                Your Match
+              </span>
+              {matchResult ? (
+                <MatchPercentageBadge percentage={matchResult.match_percentage} />
+              ) : (
+                <span className="text-sm text-gray-400">Not calculated</span>
+              )}
+            </div>
+            <ApplyButton
+              jobId={jobId}
+              initialStatus={hasApplied ? "applied" : "not_applied"}
+              jobStatus={job.status}
+              onApplicationSuccess={() => setHasApplied(true)}
+            />
           </div>
         </div>
       </header>

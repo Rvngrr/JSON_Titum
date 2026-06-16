@@ -196,6 +196,7 @@ async function callOpenAIForRecommendations(
 ): Promise<string> {
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
+    baseURL: process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
   });
 
   const response = await openai.chat.completions.create({
@@ -254,6 +255,23 @@ export async function generateRecommendations(
     // If OpenAI call fails, fall back to deterministic recommendations
     recommendations = [];
   }
+
+  // Filter out recommendations for skills the applicant already has
+  const matchedSkillsLower = new Set(
+    input.matchResult.matched_skills.map(s => s.toLowerCase())
+  );
+  const applicantSkillsLower = new Set(
+    input.applicantSkills.map(s => s.name.toLowerCase())
+  );
+
+  recommendations = recommendations.filter((rec) => {
+    const skillLower = rec.skill_name.toLowerCase();
+    // Don't recommend adding a skill the applicant already has
+    if (rec.suggestion_type === 'skill_to_add') {
+      return !matchedSkillsLower.has(skillLower) && !applicantSkillsLower.has(skillLower);
+    }
+    return true;
+  });
 
   // Ensure at least one suggestion when match < 100
   if (recommendations.length === 0) {

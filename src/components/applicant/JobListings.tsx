@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import MatchPercentageBadge from "@/components/applicant/MatchPercentageBadge";
+import ApplicationStatusBadge from "@/components/applicant/ApplicationStatusBadge";
+import ApplyButton from "@/components/applicant/ApplyButton";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import type { JobDescription, MatchResult, JobRequiredSkill } from "@/types";
 
@@ -16,12 +18,18 @@ export default function JobListings() {
   const [jobs, setJobs] = useState<JobWithMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
+  const [statusFetchFailed, setStatusFetchFailed] = useState(false);
 
   // Filter state
   const [keyword, setKeyword] = useState("");
   const [skillFilter, setSkillFilter] = useState("");
   const [minMatch, setMinMatch] = useState(0);
   const [maxMatch, setMaxMatch] = useState(100);
+
+  const handleApplicationSuccess = useCallback((jobId: string) => {
+    setAppliedJobIds((prev) => new Set([...prev, jobId]));
+  }, []);
 
   useEffect(() => {
     async function fetchJobs() {
@@ -60,6 +68,24 @@ export default function JobListings() {
         const { data: skillsData } = await supabase
           .from("job_required_skills")
           .select("*");
+
+        // Batch-fetch application statuses for the current user
+        const { data: applicationData, error: applicationError } =
+          await supabase
+            .from("applications")
+            .select("job_description_id")
+            .eq("applicant_id", user.id);
+
+        if (applicationError) {
+          setStatusFetchFailed(true);
+        } else if (applicationData) {
+          const appliedIds = new Set<string>(
+            applicationData.map(
+              (app: { job_description_id: string }) => app.job_description_id
+            )
+          );
+          setAppliedJobIds(appliedIds);
+        }
 
         const matchMap = new Map<string, MatchResult>();
         if (matchData) {
@@ -290,47 +316,79 @@ export default function JobListings() {
             {filteredJobs.length === 1 ? "job" : "jobs"}
           </p>
 
+          {statusFetchFailed && (
+            <div
+              className="rounded-md border border-blue-200 bg-blue-50 p-3"
+              role="status"
+              aria-live="polite"
+            >
+              <p className="text-sm text-blue-700">
+                Application status is temporarily unavailable.
+              </p>
+            </div>
+          )}
+
           <ul className="space-y-3" role="list">
             {filteredJobs.map((job) => (
-              <li key={job.id}>
-                <Link
-                  href={`/applicant/jobs/${job.id}`}
-                  className="block rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:border-blue-300 hover:shadow-md"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-medium text-gray-900">
-                        {job.title}
-                      </h3>
-                      <p className="mt-1 line-clamp-2 text-sm text-gray-600">
-                        {job.description}
-                      </p>
-                      {job.requiredSkills.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {job.requiredSkills.map((skill) => (
-                            <span
-                              key={skill}
-                              className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="ml-4 flex-shrink-0">
-                      {job.matchPercentage !== null ? (
-                        <MatchPercentageBadge
-                          percentage={job.matchPercentage}
-                        />
-                      ) : (
-                        <span className="text-xs text-gray-400">
-                          Not calculated
-                        </span>
-                      )}
-                    </div>
+              <li
+                key={job.id}
+                className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:border-blue-300 hover:shadow-md"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <Link
+                      href={`/applicant/jobs/${job.id}`}
+                      className="text-lg font-medium text-gray-900 hover:text-blue-600 hover:underline"
+                    >
+                      {job.title}
+                    </Link>
+                    <p className="mt-1 line-clamp-2 text-sm text-gray-600">
+                      {job.description}
+                    </p>
+                    {job.requiredSkills.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {job.requiredSkills.map((skill) => (
+                          <span
+                            key={skill}
+                            className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </Link>
+                  <div className="ml-4 flex-shrink-0">
+                    {job.matchPercentage !== null ? (
+                      <MatchPercentageBadge
+                        percentage={job.matchPercentage}
+                      />
+                    ) : (
+                      <span className="text-xs text-gray-400">
+                        Not calculated
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
+                  {!statusFetchFailed && (
+                    <ApplicationStatusBadge
+                      applied={appliedJobIds.has(job.id)}
+                    />
+                  )}
+                  <div className={statusFetchFailed ? "ml-auto" : ""}>
+                    <ApplyButton
+                      jobId={job.id}
+                      initialStatus={
+                        appliedJobIds.has(job.id) ? "applied" : "not_applied"
+                      }
+                      jobStatus={job.status}
+                      onApplicationSuccess={() =>
+                        handleApplicationSuccess(job.id)
+                      }
+                    />
+                  </div>
+                </div>
               </li>
             ))}
           </ul>

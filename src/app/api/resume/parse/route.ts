@@ -31,11 +31,13 @@ export async function POST(request: Request) {
     const supabase = createAdminClient();
 
     // 1. Download the file from Supabase Storage
+    console.log("[resume/parse] Downloading file from path:", file_path);
     const { data: fileData, error: downloadError } = await supabase.storage
       .from("resumes")
       .download(file_path);
 
     if (downloadError || !fileData) {
+      console.error("[resume/parse] Download failed:", downloadError);
       return Response.json(
         {
           success: false,
@@ -47,7 +49,20 @@ export async function POST(request: Request) {
     }
 
     // 2. Extract text from the file
-    const rawText = await extractTextFromFile(fileData, file_path);
+    let rawText: string;
+    try {
+      rawText = await extractTextFromFile(fileData, file_path);
+    } catch (extractError) {
+      console.error("[resume/parse] Text extraction failed:", extractError);
+      return Response.json(
+        {
+          success: false,
+          skills: [],
+          error: "Failed to extract text from the uploaded file. Please try a different format or enter skills manually.",
+        } satisfies ResumeParseResponse,
+        { status: 422 }
+      );
+    }
 
     if (!rawText || rawText.trim().length === 0) {
       return Response.json(
@@ -62,9 +77,12 @@ export async function POST(request: Request) {
     }
 
     // 3. Call OpenAI to extract structured skills
+    console.log("[resume/parse] Step 3: Calling AI to extract skills, text length:", rawText.length);
     const extractedSkills = await extractSkillsWithAI(rawText);
+    console.log("[resume/parse] Step 3 done: Extracted", extractedSkills.length, "skills");
 
     // 4. Upsert skill_profile record for the user
+    console.log("[resume/parse] Step 4: Upserting skill_profile for user:", user_id);
     const { data: skillProfile, error: upsertError } = await supabase
       .from("skill_profiles")
       .upsert(
@@ -80,6 +98,7 @@ export async function POST(request: Request) {
       .single();
 
     if (upsertError || !skillProfile) {
+      console.error("[resume/parse] Step 4 failed:", upsertError);
       return Response.json(
         {
           success: false,
@@ -122,20 +141,70 @@ export async function POST(request: Request) {
       }
     }
 
-    // 7. Return the parsed response
+    // 7. Trigger match calculation for this applicant against all published jobs
+    try {
+      const { data: publishedJobs } = await supabase
+        .from("job_descriptions")
+        .select("id")
+        .eq("status", "published");
+
+      if (publishedJobs && publishedJobs.length > 0) {
+        const { calculateMatch } = await import("@/lib/ai/match-engine");
+
+        for (const job of publishedJobs) {
+          try {
+            const { data: jobSkills } = await supabase
+              .from("job_required_skills")
+              .select("*")
+              .eq("job_description_id", job.id);
+
+            const { data: applicantSkills } = await supabase
+              .from("skills")
+              .select("*")
+              .eq("skill_profile_id", skillProfile.id);
+
+            if (jobSkills && jobSkills.length > 0 && applicantSkills && applicantSkills.length > 0) {
+              const result = await calculateMatch(applicantSkills, jobSkills);
+
+              await supabase
+                .from("match_results")
+                .upsert(
+                  {
+                    applicant_id: user_id,
+                    job_description_id: job.id,
+                    match_percentage: result.matchPercentage,
+                    matched_skills: result.matchedSkills,
+                    missing_skills: result.missingSkills,
+                    calculated_at: new Date().toISOString(),
+                  },
+                  { onConflict: "applicant_id,job_description_id" }
+                );
+            }
+          } catch (matchErr) {
+            console.error(`[resume/parse] Match calc failed for job ${job.id}:`, matchErr);
+          }
+        }
+      }
+    } catch (matchError) {
+      // Non-fatal: match calculation can be triggered separately
+      console.error("[resume/parse] Match calculation failed:", matchError);
+    }
+
+    // 8. Return the parsed response
     return Response.json({
       success: true,
       skills: extractedSkills,
       raw_text: rawText,
     } satisfies ResumeParseResponse);
   } catch (error) {
+    console.error("[resume/parse] Error:", error);
     const message =
       error instanceof Error ? error.message : "An unexpected error occurred";
     return Response.json(
       {
         success: false,
         skills: [],
-        error: message,
+        error: `Resume parsing failed: ${message}`,
       } satisfies ResumeParseResponse,
       { status: 500 }
     );
@@ -164,40 +233,25 @@ async function extractTextFromFile(
 }
 
 /**
- * Basic PDF text extraction.
- * Extracts readable ASCII/UTF-8 text segments from PDF binary.
- * For production use, consider pdf-parse or similar library.
+ * Basic PDF text extraction using pdf-parse library.
  */
-function extractTextFromPDF(buffer: Buffer): string {
-  // Extract text between BT (begin text) and ET (end text) markers in PDF stream,
-  // or fall back to extracting printable character sequences.
-  const content = buffer.toString("latin1");
-
-  // Try to find text objects in PDF content streams
-  const textSegments: string[] = [];
-  const textObjectRegex = /\(([^)]*)\)/g;
-  let match;
-
-  while ((match = textObjectRegex.exec(content)) !== null) {
-    const text = match[1];
-    // Filter to only printable ASCII text of reasonable length
-    if (text.length > 1 && /^[\x20-\x7E\s]+$/.test(text)) {
-      textSegments.push(text);
+async function extractTextFromPDF(buffer: Buffer): Promise<string> {
+  try {
+    const pdf = (await import("pdf-parse")).default;
+    const data = await pdf(buffer);
+    return data.text?.trim() ?? "";
+  } catch (error) {
+    console.error("PDF parse error:", error);
+    // Fallback: extract printable character sequences from binary
+    const content = buffer.toString("latin1");
+    const printableRegex = /[\x20-\x7E]{4,}/g;
+    const segments: string[] = [];
+    let match;
+    while ((match = printableRegex.exec(content)) !== null) {
+      segments.push(match[0]);
     }
+    return segments.join(" ").trim();
   }
-
-  if (textSegments.length > 0) {
-    return textSegments.join(" ").trim();
-  }
-
-  // Fallback: extract sequences of printable characters
-  const printableRegex = /[\x20-\x7E]{4,}/g;
-  const segments: string[] = [];
-  while ((match = printableRegex.exec(content)) !== null) {
-    segments.push(match[0]);
-  }
-
-  return segments.join(" ").trim();
 }
 
 /**
@@ -244,6 +298,7 @@ async function extractSkillsWithAI(
 ): Promise<Array<{ name: string; proficiency_level: "beginner" | "intermediate" | "advanced" | "expert" }>> {
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
+    baseURL: process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
   });
 
   const prompt = `You are a resume parser. Extract all professional skills from the following resume text.

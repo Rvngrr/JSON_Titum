@@ -113,7 +113,7 @@ export default function ResumeUpload({
         const parseResponse = await fetch("/api/resume/parse", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filePath }),
+          body: JSON.stringify({ file_path: filePath, user_id: user.id }),
         });
 
         setUploadProgress(90);

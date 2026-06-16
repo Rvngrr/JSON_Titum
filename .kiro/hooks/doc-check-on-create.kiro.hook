@@ -4,14 +4,12 @@
   "description": "Reminds the agent to add JSDoc comments and proper documentation when new TypeScript files are created",
   "version": "1",
   "when": {
-    "type": "fileCreated",
-    "patterns": [
-      "**/*.ts",
-      "**/*.tsx"
-    ]
+    "type": "agentStop"
   },
   "then": {
     "type": "askAgent",
     "prompt": "Verify this new file has proper JSDoc comments on all exported functions, interfaces, and components. Add missing documentation if needed. Follow the project's documentation standards."
-  }
+  },
+  "workspaceFolderName": "Test_problem1",
+  "shortName": "doc-check-on-create"
 }

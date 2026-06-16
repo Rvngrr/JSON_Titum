@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
       .select("match_percentage, matched_skills, missing_skills")
       .eq("applicant_id", applicant_id)
       .eq("job_description_id", job_description_id)
-      .single();
+      .maybeSingle();
 
     if (matchError || !matchResult) {
       // If no match result exists yet, use a default (0% match with all skills missing)

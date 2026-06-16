@@ -100,8 +100,14 @@ Applicant's Skills: ${JSON.stringify(applicantSkills.map(s => ({ name: s.name, l
 
 Job Required Skills: ${JSON.stringify(jobRequiredSkills.map(s => ({ skill: s.skill_name, importance: s.importance })))}
 
-Matched Skills: ${JSON.stringify(matchResult.matched_skills)}
-Missing Skills: ${JSON.stringify(matchResult.missing_skills)}
+Matched Skills (applicant ALREADY HAS these - DO NOT recommend adding them): ${JSON.stringify(matchResult.matched_skills)}
+Missing Skills (applicant DOES NOT have these - these are candidates for "skill_to_add"): ${JSON.stringify(matchResult.missing_skills)}
+
+IMPORTANT RULES:
+- ONLY recommend skills from the "Missing Skills" list as "skill_to_add"
+- NEVER recommend a skill that appears in "Matched Skills" or "Applicant's Skills" as "skill_to_add"
+- "skill_to_improve" should ONLY be used for skills the applicant has at a lower proficiency level
+- If there are no missing skills, return an empty array []
 
 Provide recommendations as a JSON array with this format:
 [
