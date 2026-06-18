@@ -1,13 +1,48 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import ResumeUpload from "@/components/applicant/ResumeUpload";
 import SkillProfile from "@/components/applicant/SkillProfile";
+import { useToast } from "@/components/shared/Toast";
 
 export default function ApplicantProfilePage() {
   const [skillsKey, setSkillsKey] = useState(0);
   const [recalculating, setRecalculating] = useState(false);
+  const [existingResume, setExistingResume] = useState<string | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const { addToast } = useToast();
+
+  // Fetch existing resume filename on mount
+  useEffect(() => {
+    async function fetchExistingResume() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setLoadingProfile(false);
+          return;
+        }
+
+        const { data: skillProfile } = await supabase
+          .from("skill_profiles")
+          .select("resume_file_path")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (skillProfile?.resume_file_path) {
+          // Extract just the filename from the path (e.g., "user-id/resume.pdf" → "resume.pdf")
+          const parts = skillProfile.resume_file_path.split("/");
+          setExistingResume(parts[parts.length - 1]);
+        }
+      } catch {
+        // Non-critical — just means we can't show existing filename
+      } finally {
+        setLoadingProfile(false);
+      }
+    }
+    fetchExistingResume();
+  }, []);
 
   const triggerMatchRecalculation = useCallback(async () => {
     try {
@@ -25,9 +60,11 @@ export default function ApplicantProfilePage() {
       if (!response.ok) {
         const data = await response.json().catch(() => null);
         console.error("Match recalculation failed:", response.status, data);
+        addToast("error", "Match recalculation failed.");
       }
     } catch (err) {
       console.error("Match recalculation failed:", err);
+      addToast("error", "Match recalculation failed.");
     } finally {
       setRecalculating(false);
     }
@@ -69,7 +106,11 @@ export default function ApplicantProfilePage() {
             Resume
           </h2>
           <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <ResumeUpload onSkillsExtracted={handleSkillsExtracted} />
+            {loadingProfile ? (
+              <p className="text-sm text-gray-500">Loading resume info...</p>
+            ) : (
+              <ResumeUpload onSkillsExtracted={handleSkillsExtracted} existingFilename={existingResume} />
+            )}
           </div>
         </section>
 
@@ -81,6 +122,14 @@ export default function ApplicantProfilePage() {
           >
             Skills
           </h2>
+          {!loadingProfile && !existingResume && (
+            <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3" role="status">
+              <p className="text-sm text-amber-800">
+                No resume uploaded. Skills marked as &quot;Parsed from resume&quot; may be outdated.
+                Upload a resume to keep your skill profile in sync.
+              </p>
+            </div>
+          )}
           <SkillProfile key={skillsKey} onSkillsChanged={handleSkillsChanged} />
         </section>
       </div>

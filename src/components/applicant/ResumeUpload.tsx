@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useToast } from "@/components/shared/Toast";
 
 const ALLOWED_MIME_TYPES = [
   "application/pdf",
@@ -37,6 +38,7 @@ export default function ResumeUpload({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentFilename, setCurrentFilename] = useState<string | null>(existingFilename);
   const [isDragOver, setIsDragOver] = useState(false);
+  const { addToast } = useToast();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -128,6 +130,11 @@ export default function ResumeUpload({
             errorData?.error || "Failed to parse resume. Please try entering your skills manually.";
           setError(message);
           setStatus("error");
+          if (message.includes("API key") || message.includes("AI")) {
+            addToast("warning", "AI service unavailable. Please enter your skills manually.");
+          } else {
+            addToast("error", message);
+          }
           onParseFailure?.();
           return;
         }
@@ -135,25 +142,31 @@ export default function ResumeUpload({
         const parseData = await parseResponse.json();
 
         if (!parseData.success) {
-          setError(
-            parseData.error ||
-              "Failed to extract skills from resume. Please enter your skills manually."
-          );
+          const message = parseData.error ||
+            "Failed to extract skills from resume. Please enter your skills manually.";
+          setError(message);
           setStatus("error");
+          if (message.includes("API key") || message.includes("AI")) {
+            addToast("warning", "AI service unavailable. Please enter your skills manually.");
+          } else {
+            addToast("error", message);
+          }
           onParseFailure?.();
           return;
         }
 
         setUploadProgress(100);
         setStatus("success");
+        addToast("success", "Resume parsed successfully!");
         onSkillsExtracted?.(parseData.skills);
       } catch (err) {
         const message = err instanceof Error ? err.message : "An unexpected error occurred.";
         setError(message);
         setStatus("error");
+        addToast("error", message);
       }
     },
-    [onSkillsExtracted, onParseFailure]
+    [onSkillsExtracted, onParseFailure, addToast]
   );
 
   const handleDrop = useCallback(

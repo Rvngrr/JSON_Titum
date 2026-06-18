@@ -132,5 +132,14 @@ export async function callGemini(
   }
 
   // Both failed — throw so the caller uses local fallback
+  // Include specific message about missing keys for better UX
+  const missingKeys: string[] = [];
+  if (!process.env.GEMINI_API_KEY) missingKeys.push("GEMINI_API_KEY");
+  if (!process.env.OPENAI_API_KEY) missingKeys.push("OPENAI_API_KEY");
+
+  if (missingKeys.length > 0) {
+    throw new Error(`AI API keys not configured: ${missingKeys.join(", ")}. Using local matching instead.`);
+  }
+
   throw new Error("All AI providers exhausted (Gemini + OpenAI both failed)");
 }
