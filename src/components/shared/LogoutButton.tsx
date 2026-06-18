@@ -13,7 +13,10 @@ export default function LogoutButton() {
     try {
       const supabase = createClient();
       await supabase.auth.signOut();
-      router.push("/login");
+      // Use replace to prevent back-button returning to authenticated pages
+      router.replace("/login");
+      // Force a full page reload to clear any cached state
+      window.location.href = "/login";
     } catch {
       setLoggingOut(false);
     }

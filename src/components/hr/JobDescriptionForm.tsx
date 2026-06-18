@@ -185,6 +185,17 @@ export default function JobDescriptionForm({ initialData }: JobDescriptionFormPr
         }
 
         setSuccess("Job description updated successfully!");
+
+        // Trigger match recalculation for this updated job
+        if (initialData?.id) {
+          fetch("/api/match/calculate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ job_description_id: initialData.id }),
+          }).catch(() => {
+            // Non-blocking
+          });
+        }
       } else {
         // Insert new job description
         const { data: jobData, error: insertError } = await supabase
@@ -223,6 +234,15 @@ export default function JobDescriptionForm({ initialData }: JobDescriptionFormPr
         }
 
         setSuccess("Job description created successfully!");
+
+        // Trigger match calculation for all applicants against this new job
+        fetch("/api/match/calculate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ job_description_id: jobData.id }),
+        }).catch(() => {
+          // Non-blocking — match calculation failure doesn't affect job creation
+        });
       }
 
       // Redirect to HR dashboard after short delay for user to see success message
