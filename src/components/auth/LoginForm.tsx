@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useToast } from "@/components/shared/Toast";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -10,6 +11,7 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { addToast } = useToast();
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -27,12 +29,14 @@ export default function LoginForm() {
       if (authError) {
         // Generic error message — do NOT reveal which field is incorrect (Requirement 2.2)
         setError("Invalid email or password. Please try again.");
+        addToast("error", "Login failed. Please check your credentials.");
         setIsLoading(false);
         return;
       }
 
       // Get role from user_metadata and redirect to role-appropriate dashboard
       const role = data.user?.user_metadata?.role;
+      addToast("success", "Signed in successfully. Redirecting...");
 
       if (role === "hr_user") {
         router.push("/hr");
@@ -42,6 +46,7 @@ export default function LoginForm() {
       }
     } catch {
       setError("An unexpected error occurred. Please try again.");
+      addToast("error", "An unexpected error occurred. Please try again.");
       setIsLoading(false);
     }
   }

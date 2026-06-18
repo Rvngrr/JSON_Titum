@@ -178,7 +178,63 @@ export default function ApplicantRankings({ jobId }: ApplicantRankingsProps) {
         }
 
         if (appError) {
-          setError("Failed to load applications.");
+          // If applications query fails for any reason (including RLS), 
+          // fall back to showing all matched applicants
+          setFallbackMode(true);
+          setWarning(
+            "Unable to filter by applications. Showing all matched applicants."
+          );
+
+          // Fetch all match results for this job
+          const { data: matchResults, error: matchError } = await supabase
+            .from("match_results")
+            .select("applicant_id, match_percentage")
+            .eq("job_description_id", jobId);
+
+          if (matchError) {
+            setError("Failed to load match results.");
+            setLoading(false);
+            return;
+          }
+
+          if (!matchResults || matchResults.length === 0) {
+            setRankedApplicants([]);
+            setPendingApplicants([]);
+            setTotalApplications(0);
+            setLoading(false);
+            return;
+          }
+
+          // Fetch profiles for all matched applicants
+          const applicantIds = matchResults.map((m) => m.applicant_id);
+          const { data: profiles, error: profileError } = await supabase
+            .from("profiles")
+            .select("id, name")
+            .in("id", applicantIds);
+
+          if (profileError) {
+            setError("Failed to load applicant profiles.");
+            setLoading(false);
+            return;
+          }
+
+          const profileMap = new Map<string, string>();
+          if (profiles) {
+            for (const profile of profiles) {
+              profileMap.set(profile.id, profile.name);
+            }
+          }
+
+          const entries: ApplicantMatchEntry[] = matchResults.map((m) => ({
+            applicantId: m.applicant_id,
+            name: profileMap.get(m.applicant_id) ?? "Unknown Applicant",
+            matchPercentage: m.match_percentage,
+          }));
+
+          const ranked = computeRanks(entries);
+          setRankedApplicants(ranked);
+          setPendingApplicants([]);
+          setTotalApplications(matchResults.length);
           setLoading(false);
           return;
         }

@@ -5,12 +5,14 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { JobDescription } from "@/types";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
+import { useToast } from "@/components/shared/Toast";
 
 export default function JobDescriptionList() {
   const [jobs, setJobs] = useState<JobDescription[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   const supabase = createClient();
 
@@ -25,6 +27,7 @@ export default function JobDescriptionList() {
 
     if (fetchError) {
       setError("Failed to load job descriptions. Please try again.");
+      addToast("error", "Failed to load job descriptions.");
     } else {
       setJobs(data as JobDescription[]);
     }
@@ -53,9 +56,11 @@ export default function JobDescriptionList() {
 
     if (deleteError) {
       setError("Failed to delete job description. Please try again.");
+      addToast("error", "Failed to delete job description. Please try again.");
       setDeletingId(null);
     } else {
       setJobs((prev) => prev.filter((job) => job.id !== jobId));
+      addToast("success", `"${jobTitle}" has been deleted.`);
       setDeletingId(null);
     }
   };

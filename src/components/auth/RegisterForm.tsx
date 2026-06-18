@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { validatePassword, validateEmail } from "@/lib/validators/auth";
 import RoleSelector, { type UserRole } from "./RoleSelector";
+import { useToast } from "@/components/shared/Toast";
 
 interface FormErrors {
   email?: string;
@@ -15,6 +16,7 @@ interface FormErrors {
 
 export default function RegisterForm() {
   const router = useRouter();
+  const { addToast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -72,15 +74,19 @@ export default function RegisterForm() {
           setErrors({
             email: "An account with this email already exists",
           });
+          addToast("error", "An account with this email already exists.");
         } else {
           setErrors({ general: error.message });
+          addToast("error", error.message);
         }
         return;
       }
 
+      addToast("success", "Registration successful! Please check your email.");
       router.push("/login?message=Registration successful. Please check your email to confirm your account.");
     } catch {
       setErrors({ general: "An unexpected error occurred. Please try again." });
+      addToast("error", "An unexpected error occurred. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

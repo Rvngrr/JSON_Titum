@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { JobDescription } from "@/types";
+import { useToast } from "@/components/shared/Toast";
 
 interface ApplyButtonProps {
   jobId: string;
@@ -20,6 +21,7 @@ export default function ApplyButton({
     "idle" | "submitting" | "applied" | "error"
   >(initialStatus === "applied" ? "applied" : "idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   // Do not render button if job is not published
   if (jobStatus !== "published") {
@@ -40,10 +42,12 @@ export default function ApplyButton({
       if (response.status === 201) {
         // Success
         setStatus("applied");
+        addToast("success", "Application submitted successfully!");
         onApplicationSuccess?.();
       } else if (response.status === 409) {
         // Duplicate — treat as success
         setStatus("applied");
+        addToast("info", "You have already applied to this job.");
         onApplicationSuccess?.();
       } else {
         // Error (422, 401, 500, etc.)
@@ -52,10 +56,12 @@ export default function ApplyButton({
           data?.message || "Failed to submit application. Please try again.";
         setStatus("error");
         setErrorMessage(message);
+        addToast("error", message);
       }
     } catch {
       setStatus("error");
       setErrorMessage("Failed to submit application. Please try again.");
+      addToast("error", "Failed to submit application. Please try again.");
     }
   }
 
