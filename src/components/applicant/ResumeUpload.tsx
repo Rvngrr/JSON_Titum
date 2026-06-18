@@ -91,19 +91,23 @@ export default function ResumeUpload({
         // Simulate progress for upload
         setUploadProgress(20);
 
-        // Upload to Supabase Storage (upsert to allow re-uploading)
-        const { error: uploadError } = await supabase.storage
-          .from("resumes")
-          .upload(filePath, file, {
-            cacheControl: "3600",
-            upsert: true,
-          });
+        // Upload via server-side API route (bypasses storage RLS)
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", file);
 
-        if (uploadError) {
-          setError(`Upload failed: ${uploadError.message}`);
+        const uploadResponse = await fetch("/api/resume/upload", {
+          method: "POST",
+          body: uploadFormData,
+        });
+
+        if (!uploadResponse.ok) {
+          const uploadData = await uploadResponse.json().catch(() => null);
+          setError(uploadData?.error || "Upload failed. Please try again.");
           setStatus("error");
           return;
         }
+
+        const uploadResult = await uploadResponse.json();
 
         setUploadProgress(60);
         setCurrentFilename(file.name);
@@ -113,7 +117,7 @@ export default function ResumeUpload({
         const parseResponse = await fetch("/api/resume/parse", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ file_path: filePath, user_id: user.id }),
+          body: JSON.stringify({ file_path: uploadResult.file_path, user_id: uploadResult.user_id }),
         });
 
         setUploadProgress(90);
@@ -202,24 +206,49 @@ export default function ResumeUpload({
     <section aria-label="Resume upload" className="w-full">
       {/* Current resume display */}
       {currentFilename && status !== "uploading" && status !== "parsing" && (
-        <div className="mb-3 flex items-center gap-2 text-sm text-gray-600">
-          <svg
-            className="h-4 w-4 text-green-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
+        <div className="mb-3 flex items-center justify-between rounded-md border border-green-200 bg-green-50 p-3">
+          <div className="flex items-center gap-2 text-sm text-gray-700">
+            <svg
+              className="h-5 w-5 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>
+              Current resume: <strong>{currentFilename}</strong>
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                const supabase = createClient();
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+                const response = await fetch(`/api/resume/view?applicant_id=${user.id}`);
+                const data = await response.json();
+                if (data.url) {
+                  window.open(data.url, "_blank");
+                } else {
+                  alert(data.error || "Unable to open resume.");
+                }
+              } catch {
+                alert("Failed to open resume.");
+              }
+            }}
+            className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>
-            Current resume: <strong>{currentFilename}</strong>
-          </span>
+            View Resume
+          </button>
         </div>
       )}
 

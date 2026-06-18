@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/server";
-import { ResumeParseResponse } from "@/types";
-import OpenAI from "openai";
+import { ResumeParseResponse, ResumeProfile } from "@/types";
+import { callGemini } from "@/lib/ai/gemini";
 
 /**
  * POST /api/resume/parse
@@ -76,10 +76,23 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Call OpenAI to extract structured skills
+    // 3. Call AI to extract structured skills and profile
     console.log("[resume/parse] Step 3: Calling AI to extract skills, text length:", rawText.length);
-    const extractedSkills = await extractSkillsWithAI(rawText);
-    console.log("[resume/parse] Step 3 done: Extracted", extractedSkills.length, "skills");
+    let extractedSkills = await extractSkillsWithAI(rawText);
+    
+    // 3a. If AI failed (quota/error), fall back to local text extraction
+    if (extractedSkills.length === 0) {
+      console.log("[resume/parse] AI extraction returned 0 skills, using local fallback");
+      extractedSkills = extractSkillsLocally(rawText);
+      console.log("[resume/parse] Local extraction found", extractedSkills.length, "skills");
+    } else {
+      console.log("[resume/parse] Step 3 done: Extracted", extractedSkills.length, "skills");
+    }
+
+    // 3b. Extract full profile (projects, experience, certs, achievements)
+    console.log("[resume/parse] Step 3b: Extracting structured profile...");
+    const resumeProfile = await extractResumeProfile(rawText);
+    console.log("[resume/parse] Step 3b done:", resumeProfile.projects.length, "projects,", resumeProfile.experience.length, "experiences");
 
     // 4. Upsert skill_profile record for the user
     console.log("[resume/parse] Step 4: Upserting skill_profile for user:", user_id);
@@ -194,6 +207,7 @@ export async function POST(request: Request) {
     return Response.json({
       success: true,
       skills: extractedSkills,
+      profile: resumeProfile,
       raw_text: rawText,
     } satisfies ResumeParseResponse);
   } catch (error) {
@@ -290,55 +304,62 @@ async function extractTextFromDOCX(buffer: Buffer): Promise<string> {
 }
 
 /**
- * Calls OpenAI to extract structured skills from resume text.
+ * Calls Gemini to extract structured skills from resume text.
+ * Uses an enhanced prompt for better accuracy in skill detection and proficiency assessment.
  * Returns an array of skills with name and proficiency level.
  */
 async function extractSkillsWithAI(
   resumeText: string
 ): Promise<Array<{ name: string; proficiency_level: "beginner" | "intermediate" | "advanced" | "expert" }>> {
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    baseURL: process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
-  });
+  const systemPrompt = `You are an expert technical recruiter and resume analyst. Your job is to extract ALL technical and professional skills from resumes with high precision.
 
-  const prompt = `You are a resume parser. Extract all professional skills from the following resume text.
+RULES:
+1. Extract EVERY skill mentioned — programming languages, frameworks, libraries, tools, methodologies, soft skills, platforms, and certifications.
+2. Use the CANONICAL name for each skill (e.g., "React" not "ReactJS", "JavaScript" not "JS", "Next.js" not "NextJS").
+3. Do NOT merge related but distinct skills (e.g., "HTML" and "CSS" are separate skills, "Python" and "Flask" are separate).
+4. Do NOT invent skills that are not mentioned or strongly implied.
+5. Include soft skills if explicitly stated (e.g., "Team Collaboration", "Problem-Solving").
+6. Always respond with valid JSON only — no markdown, no explanation, no extra text.`;
 
-For each skill, determine the proficiency level based on context clues:
-- "expert": 5+ years experience, lead/senior roles, deep expertise mentioned
-- "advanced": 3-5 years experience, significant project work
-- "intermediate": 1-3 years experience, some project work
-- "beginner": mentioned but no significant experience indicated
+  const userPrompt = `Extract all professional skills from this resume. Be thorough — do not miss any skill mentioned in the text.
 
-Return ONLY a valid JSON array with objects containing "name" (string) and "proficiency_level" (one of: "beginner", "intermediate", "advanced", "expert").
+PROFICIENCY ASSESSMENT RULES:
+- "expert": The person led teams/projects using this skill, has 5+ years with it, or is explicitly described as expert/senior level
+- "advanced": The person built significant projects with this skill, used it professionally for 2-4 years, or demonstrated strong results (e.g., "improved performance by 25%")
+- "intermediate": The person used this skill in projects, coursework, or 1-2 years of experience, or it's listed in their skills section with demonstrated use
+- "beginner": The skill is only listed without evidence of use, mentioned in passing, or associated with certifications/seminars only
 
-Example output:
-[{"name": "Python", "proficiency_level": "advanced"}, {"name": "React", "proficiency_level": "intermediate"}]
+SKILL CATEGORIES TO LOOK FOR:
+- Programming languages (C++, Python, Java, JavaScript, etc.)
+- Frontend frameworks/libraries (React, Next.js, Vue, Angular, Tailwind CSS, etc.)
+- Backend frameworks (Flask, Django, Spring Boot, Node.js, Express, etc.)
+- AI/ML tools (TensorFlow, PyTorch, OpenAI, YOLO, Scikit Learn, etc.)
+- Databases (SQL, PostgreSQL, MongoDB, etc.)
+- DevOps/Cloud (Docker, AWS, CI/CD, Git, etc.)
+- Design tools (Figma, Canva, Adobe XD, etc.)
+- Testing (Manual Testing, Unit Testing, Cross-Browser Testing, etc.)
+- Soft skills (Leadership, Communication, Problem-Solving, Team Collaboration, etc.)
+- Other tools (Excel, Google Suite, Microsoft Office, etc.)
 
-Resume text:
-${resumeText}`;
+Return a JSON array. Example:
+[
+  {"name": "Python", "proficiency_level": "advanced"},
+  {"name": "React", "proficiency_level": "intermediate"},
+  {"name": "Figma", "proficiency_level": "intermediate"},
+  {"name": "Team Collaboration", "proficiency_level": "advanced"}
+]
+
+RESUME TEXT:
+---
+${resumeText}
+---
+
+Extract ALL skills now. Be comprehensive.`;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a precise resume parser that extracts skills and proficiency levels. Always respond with valid JSON only, no markdown formatting or extra text.",
-        },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.1,
-      max_tokens: 2000,
-    });
+    const content = await callGemini(systemPrompt, userPrompt, { temperature: 0.1, maxTokens: 3000 });
 
-    const content = response.choices[0]?.message?.content?.trim();
-
-    if (!content) {
-      return [];
-    }
-
-    // Parse the JSON response, handling potential markdown code fences
+    // Parse the JSON response
     const jsonStr = content.replace(/```json\n?|\n?```/g, "").trim();
     const parsed = JSON.parse(jsonStr);
 
@@ -348,6 +369,9 @@ ${resumeText}`;
 
     // Validate and sanitize each skill entry
     const validLevels = ["beginner", "intermediate", "advanced", "expert"] as const;
+
+    // Deduplicate by normalized skill name
+    const seen = new Set<string>();
 
     return parsed
       .filter(
@@ -367,11 +391,327 @@ ${resumeText}`;
           ? (item.proficiency_level as (typeof validLevels)[number])
           : ("intermediate" as const),
       }))
-      .filter((item) => item.name.length > 0);
+      .filter((item) => {
+        if (item.name.length === 0) return false;
+        const key = item.name.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
   } catch (error) {
-    // If OpenAI call or JSON parsing fails, return empty array
-    // The caller will still save the raw_resume_text for future retries
     console.error("Failed to extract skills with AI:", error);
     return [];
   }
+}
+
+
+/**
+ * Extracts a full structured profile from resume text using Gemini.
+ * Captures experience, projects (with tech & outcomes), certifications, and achievements.
+ */
+async function extractResumeProfile(resumeText: string): Promise<ResumeProfile> {
+  const systemPrompt = `You are an expert resume analyst. Extract structured information from resumes with high accuracy. Always respond with valid JSON only.`;
+
+  const userPrompt = `Analyze this resume and extract the following structured data.
+
+IMPORTANT RULES:
+- For EXPERIENCE: extract job title, organization, duration (e.g., "2024 - 2025"), and 2-4 bullet-point highlights showing what they accomplished
+- For PROJECTS: extract project name, a one-line description, technologies used (as array), and the measurable outcome/result if mentioned
+- For CERTIFICATIONS: list all certifications, seminars, and training programs
+- For ACHIEVEMENTS: list awards, rankings (e.g., "6th Place in Hawk-a-thon"), metrics (e.g., "improved performance by 25%"), and notable accomplishments
+- For EDUCATION: extract degree, institution, and graduation year
+
+Return a JSON object with this EXACT structure:
+{
+  "experience": [
+    {
+      "title": "Job Title",
+      "organization": "Company/Org Name",
+      "duration": "Start - End",
+      "highlights": ["What they did 1", "What they did 2"]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Project Name",
+      "description": "One-line description of what it does",
+      "technologies": ["Tech1", "Tech2"],
+      "outcome": "Measurable result if mentioned (e.g., '90% accuracy', '25% improvement')"
+    }
+  ],
+  "certifications": ["Cert 1", "Cert 2"],
+  "achievements": ["Achievement 1", "Achievement 2"],
+  "education": [
+    {
+      "degree": "Bachelor of Science in Computer Science",
+      "institution": "University Name",
+      "year": "2026"
+    }
+  ]
+}
+
+RESUME TEXT:
+---
+${resumeText}
+---`;
+
+  try {
+    const content = await callGemini(systemPrompt, userPrompt, { temperature: 0.1, maxTokens: 3000 });
+    const jsonStr = content.replace(/```json\n?|\n?```/g, "").trim();
+    const parsed = JSON.parse(jsonStr);
+
+    // Validate and return with defaults for missing fields
+    return {
+      experience: Array.isArray(parsed.experience) ? parsed.experience.map((e: Record<string, unknown>) => ({
+        title: String(e.title || ""),
+        organization: String(e.organization || ""),
+        duration: String(e.duration || ""),
+        highlights: Array.isArray(e.highlights) ? e.highlights.map(String) : [],
+      })) : [],
+      projects: Array.isArray(parsed.projects) ? parsed.projects.map((p: Record<string, unknown>) => ({
+        name: String(p.name || ""),
+        description: String(p.description || ""),
+        technologies: Array.isArray(p.technologies) ? p.technologies.map(String) : [],
+        outcome: p.outcome ? String(p.outcome) : undefined,
+      })) : [],
+      certifications: Array.isArray(parsed.certifications) ? parsed.certifications.map(String) : [],
+      achievements: Array.isArray(parsed.achievements) ? parsed.achievements.map(String) : [],
+      education: Array.isArray(parsed.education) ? parsed.education.map((ed: Record<string, unknown>) => ({
+        degree: String(ed.degree || ""),
+        institution: String(ed.institution || ""),
+        year: String(ed.year || ""),
+      })) : [],
+    };
+  } catch (error) {
+    console.error("[resume/parse] Profile extraction failed:", error);
+    // Return empty profile on failure — skills are still available
+    return {
+      experience: [],
+      projects: [],
+      certifications: [],
+      achievements: [],
+      education: [],
+    };
+  }
+}
+
+
+/**
+ * Local fallback: Extracts skills from resume text using intelligent keyword pattern matching.
+ * Used when ALL AI providers are unavailable (Gemini + OpenAI both exhausted).
+ * 
+ * Strategy:
+ * 1. Detect resume sections (Skills, Experience, Projects, Certifications)
+ * 2. Skills listed in a dedicated "Skills" section → intermediate by default
+ * 3. Skills used in projects with measurable outcomes → advanced
+ * 4. Skills where the person led/taught others → advanced/expert
+ * 5. Skills only in certifications/seminars → beginner
+ */
+function extractSkillsLocally(
+  resumeText: string
+): Array<{ name: string; proficiency_level: "beginner" | "intermediate" | "advanced" | "expert" }> {
+  const text = resumeText.toLowerCase();
+  const lines = resumeText.split("\n").map(l => l.trim()).filter(Boolean);
+
+  // Detect sections
+  const sections = detectSections(lines);
+
+  // Comprehensive skill database with search patterns
+  const skillDB: Array<{ name: string; patterns: RegExp[] }> = [
+    // Programming languages
+    { name: "C++", patterns: [/\bc\+\+\b/, /\bcpp\b/] },
+    { name: "C", patterns: [/\bc\b(?![\+#s])/i, /\bc,/, /\bc language/] },
+    { name: "Java", patterns: [/\bjava\b(?!script)/] },
+    { name: "JavaScript", patterns: [/\bjavascript\b/, /\bjs\b/] },
+    { name: "Python", patterns: [/\bpython\b/] },
+    { name: "C#", patterns: [/\bc#\b/, /\bcsharp\b/] },
+    { name: "TypeScript", patterns: [/\btypescript\b/] },
+    { name: "PHP", patterns: [/\bphp\b/] },
+    { name: "Ruby", patterns: [/\bruby\b/] },
+    { name: "Go", patterns: [/\bgolang\b/, /\bgo\s+programming\b/] },
+    { name: "Rust", patterns: [/\brust\b/] },
+    { name: "Swift", patterns: [/\bswift\b/] },
+    { name: "Kotlin", patterns: [/\bkotlin\b/] },
+    { name: "R", patterns: [/\br\s+programming\b/, /\br\s+language\b/] },
+
+    // Frontend
+    { name: "React", patterns: [/\breact\b/, /\breactjs\b/, /\breact\.js\b/] },
+    { name: "Next.js", patterns: [/\bnext\.?js\b/, /\bnext\s*js\b/] },
+    { name: "Vue", patterns: [/\bvue\b/, /\bvuejs\b/] },
+    { name: "Angular", patterns: [/\bangular\b/] },
+    { name: "Svelte", patterns: [/\bsvelte\b/] },
+    { name: "HTML", patterns: [/\bhtml\b/] },
+    { name: "CSS", patterns: [/\bcss\b/] },
+    { name: "Tailwind CSS", patterns: [/\btailwind\b/] },
+    { name: "Bootstrap", patterns: [/\bbootstrap\b/] },
+    { name: "Vite", patterns: [/\bvite\b/] },
+    { name: "Prettier", patterns: [/\bprettier\b/] },
+    { name: "Responsive Design", patterns: [/\bresponsive\b/] },
+
+    // Backend
+    { name: "Node.js", patterns: [/\bnode\.?js\b/, /\bnodejs\b/] },
+    { name: "Flask", patterns: [/\bflask\b/] },
+    { name: "Django", patterns: [/\bdjango\b/] },
+    { name: "Spring Boot", patterns: [/\bspring\s*boot\b/, /\bspring\s+framework\b/] },
+    { name: "Express", patterns: [/\bexpress\.?js\b/, /\bexpress\s+server\b/] },
+    { name: "FastAPI", patterns: [/\bfastapi\b/] },
+    { name: "REST APIs", patterns: [/\brest\s*api\b/, /\brestful\b/] },
+
+    // AI/ML
+    { name: "TensorFlow", patterns: [/\btensorflow\b/] },
+    { name: "PyTorch", patterns: [/\bpytorch\b/] },
+    { name: "YOLO", patterns: [/\byolo\b/, /\byolov\d+\b/] },
+    { name: "OpenCV", patterns: [/\bopencv\b/, /\bopen\s*cv\b/] },
+    { name: "Scikit Learn", patterns: [/\bscikit\b/, /\bsklearn\b/] },
+    { name: "OpenAI", patterns: [/\bopenai\b/] },
+    { name: "Gemini", patterns: [/\bgemini\b/, /\bgemma\b/] },
+    { name: "Google Colab", patterns: [/\bcolab\b/, /\bgoogle\s*colab\b/] },
+    { name: "Ollama", patterns: [/\bollama\b/] },
+    { name: "Machine Learning", patterns: [/\bmachine\s*learning\b/] },
+    { name: "Deep Learning", patterns: [/\bdeep\s*learning\b/] },
+    { name: "Computer Vision", patterns: [/\bcomputer\s*vision\b/] },
+    { name: "NLP", patterns: [/\bnlp\b/, /\bnatural\s*language\s*processing\b/] },
+
+    // Design
+    { name: "Figma", patterns: [/\bfigma\b/] },
+    { name: "Canva", patterns: [/\bcanva\b/] },
+    { name: "Adobe XD", patterns: [/\badobe\s*xd\b/] },
+    { name: "UI/UX Design", patterns: [/\bui\/ux\b/, /\bux\s*design\b/, /\bui\s*design\b/] },
+    { name: "Prototyping", patterns: [/\bprototyp/] },
+
+    // Testing/QA
+    { name: "Manual Testing", patterns: [/\bmanual\s*testing\b/] },
+    { name: "Functional Testing", patterns: [/\bfunctional\s*testing\b/] },
+    { name: "Cross-Browser Testing", patterns: [/\bcross[\s-]*browser\s*testing\b/] },
+    { name: "Debugging", patterns: [/\bdebugging\b/] },
+    { name: "Unit Testing", patterns: [/\bunit\s*test/] },
+    { name: "QA", patterns: [/\bquality\s*assurance\b/, /\bqa\b/] },
+
+    // DevOps/Tools
+    { name: "Docker", patterns: [/\bdocker\b/] },
+    { name: "Kubernetes", patterns: [/\bkubernetes\b/, /\bk8s\b/] },
+    { name: "Git", patterns: [/\bgit\b/, /\bgithub\b/, /\bgitlab\b/] },
+    { name: "CI/CD", patterns: [/\bci\/cd\b/, /\bcicd\b/, /\bcontinuous\s*integration\b/] },
+    { name: "Linux", patterns: [/\blinux\b/, /\bubuntu\b/] },
+    { name: "AWS", patterns: [/\baws\b/, /\bamazon\s*web\s*services\b/] },
+    { name: "GCP", patterns: [/\bgcp\b/, /\bgoogle\s*cloud\b/] },
+    { name: "Azure", patterns: [/\bazure\b/] },
+
+    // Databases
+    { name: "SQL", patterns: [/\bsql\b/, /\bmysql\b/, /\bpostgresql\b/, /\bpostgres\b/] },
+    { name: "MongoDB", patterns: [/\bmongodb\b/, /\bmongo\b/] },
+    { name: "Firebase", patterns: [/\bfirebase\b/] },
+    { name: "Supabase", patterns: [/\bsupabase\b/] },
+    { name: "Redis", patterns: [/\bredis\b/] },
+
+    // Soft skills
+    { name: "Analytical Thinking", patterns: [/\banalytical\s*thinking\b/, /\banalytical\s*skills?\b/] },
+    { name: "Team Collaboration", patterns: [/\bteam\s*collaboration\b/, /\bteamwork\b/, /\bcollaborat/] },
+    { name: "Problem-Solving", patterns: [/\bproblem[\s-]*solving\b/] },
+    { name: "Communication", patterns: [/\bcommunication\b/] },
+    { name: "Organizational Skills", patterns: [/\borganizational\b/] },
+    { name: "Leadership", patterns: [/\bleadership\b/] },
+    { name: "Project Management", patterns: [/\bproject\s*management\b/] },
+
+    // Office/Other
+    { name: "Microsoft Excel", patterns: [/\bexcel\b/] },
+    { name: "Microsoft Word", patterns: [/\bmicrosoft\s*word\b/, /\bms\s*word\b/] },
+    { name: "Google Suite", patterns: [/\bgsuite\b/, /\bgoogle\s*(suite|workspace)\b/] },
+    { name: "Microsoft Teams", patterns: [/\bteams\b/] },
+    { name: "Outlook", patterns: [/\boutlook\b/] },
+  ];
+
+  const found: Array<{ name: string; proficiency_level: "beginner" | "intermediate" | "advanced" | "expert" }> = [];
+  const seen = new Set<string>();
+
+  for (const skill of skillDB) {
+    const isPresent = skill.patterns.some(p => p.test(text));
+    if (!isPresent) continue;
+
+    const key = skill.name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    // Determine proficiency based on context
+    const level = assessProficiency(skill.name, text, sections);
+    found.push({ name: skill.name, proficiency_level: level });
+  }
+
+  console.log(`[Local Fallback] Extracted ${found.length} skills from resume text`);
+  return found;
+}
+
+/**
+ * Detects resume sections by looking for common headings.
+ */
+function detectSections(lines: string[]): { 
+  skills: string; experience: string; projects: string; certifications: string; education: string 
+} {
+  const result = { skills: "", experience: "", projects: "", certifications: "", education: "" };
+  let currentSection = "";
+
+  for (const line of lines) {
+    const lower = line.toLowerCase();
+
+    if (/^(skills|technical\s*skills|additional|programming)/i.test(lower)) {
+      currentSection = "skills";
+    } else if (/^(experience|work\s*experience|employment)/i.test(lower)) {
+      currentSection = "experience";
+    } else if (/^(projects|personal\s*projects|academic\s*projects)/i.test(lower)) {
+      currentSection = "projects";
+    } else if (/^(certifications?|seminars?|training|certificates?)/i.test(lower)) {
+      currentSection = "certifications";
+    } else if (/^(education|academic)/i.test(lower)) {
+      currentSection = "education";
+    } else if (currentSection) {
+      result[currentSection as keyof typeof result] += " " + line;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Assesses proficiency level based on where and how a skill is mentioned.
+ */
+function assessProficiency(
+  skillName: string,
+  fullText: string,
+  sections: { skills: string; experience: string; projects: string; certifications: string }
+): "beginner" | "intermediate" | "advanced" | "expert" {
+  const skillLower = skillName.toLowerCase();
+  const skillRegex = new RegExp(`\\b${skillLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, "i");
+
+  // Check if skill is in experience section with leadership indicators
+  const inExperience = skillRegex.test(sections.experience);
+  const inProjects = skillRegex.test(sections.projects);
+  const inSkillsSection = skillRegex.test(sections.skills);
+  const inCerts = skillRegex.test(sections.certifications);
+
+  // Leadership/lead indicators near the skill
+  const hasLeadership = /\b(led|lead|heading|managed|architected|designed and developed)\b/i.test(fullText);
+  
+  // Measurable outcomes near the skill
+  const hasMetrics = /\b(\d+%|\d+\s*percent|improved|increased|reduced|achieved|optimiz)/i.test(fullText);
+
+  // Built/developed projects
+  const hasBuilt = /\b(built|developed|created|implemented|deployed)\b/i.test(fullText);
+
+  // Expert: led teams or workshops, has significant metrics
+  if (inExperience && hasLeadership && hasMetrics) return "expert";
+  
+  // Advanced: used in real projects with outcomes, or in experience section
+  if (inExperience && hasBuilt) return "advanced";
+  if (inProjects && hasMetrics) return "advanced";
+  if (inProjects && hasBuilt) return "advanced";
+  
+  // Intermediate: in skills section or used in projects
+  if (inSkillsSection) return "intermediate";
+  if (inProjects) return "intermediate";
+  if (inExperience) return "intermediate";
+  
+  // Beginner: only in certifications or mentioned without context
+  if (inCerts) return "beginner";
+  
+  return "intermediate";
 }

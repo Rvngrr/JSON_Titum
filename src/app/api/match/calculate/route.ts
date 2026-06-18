@@ -77,36 +77,41 @@ export async function POST(request: Request) {
       );
     }
 
-    // 4. Calculate matches for each pair
+    // 4. Calculate matches for each pair (with rate limiting for AI calls)
     const results: MatchResult[] = [];
 
     for (const pair of pairs) {
-      const matchResult = await calculateMatch(pair.applicantSkills, pair.jobRequiredSkills);
+      try {
+        const matchResult = await calculateMatch(pair.applicantSkills, pair.jobRequiredSkills);
 
-      // 5. Upsert result to match_results table
-      const { data: upserted, error: upsertError } = await adminClient
-        .from("match_results")
-        .upsert(
-          {
-            applicant_id: pair.applicantId,
-            job_description_id: pair.jobDescriptionId,
-            match_percentage: matchResult.matchPercentage,
-            matched_skills: matchResult.matchedSkills,
-            missing_skills: matchResult.missingSkills,
-            calculated_at: new Date().toISOString(),
-          },
-          { onConflict: "applicant_id,job_description_id" }
-        )
-        .select()
-        .single();
+        // 5. Upsert result to match_results table
+        const { data: upserted, error: upsertError } = await adminClient
+          .from("match_results")
+          .upsert(
+            {
+              applicant_id: pair.applicantId,
+              job_description_id: pair.jobDescriptionId,
+              match_percentage: matchResult.matchPercentage,
+              matched_skills: matchResult.matchedSkills,
+              missing_skills: matchResult.missingSkills,
+              calculated_at: new Date().toISOString(),
+            },
+            { onConflict: "applicant_id,job_description_id" }
+          )
+          .select()
+          .single();
 
-      if (upsertError) {
-        console.error("Failed to upsert match result:", upsertError);
+        if (upsertError) {
+          console.error("Failed to upsert match result:", upsertError);
+          continue;
+        }
+
+        if (upserted) {
+          results.push(upserted as MatchResult);
+        }
+      } catch (pairError) {
+        console.error(`Match calc failed for pair ${pair.applicantId}/${pair.jobDescriptionId}:`, pairError);
         continue;
-      }
-
-      if (upserted) {
-        results.push(upserted as MatchResult);
       }
     }
 

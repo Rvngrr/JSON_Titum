@@ -8,12 +8,12 @@
  * OpenAI call to enable unit testing without mocking external services.
  */
 
-import OpenAI from 'openai';
 import type { Skill, JobRequiredSkill, MatchResult } from '@/types';
 import {
   getRecommendationSystemPrompt,
   getRecommendationUserPrompt,
 } from './prompts';
+import { callGemini } from './gemini';
 
 // ============================================================================
 // Types
@@ -184,42 +184,25 @@ export function parseRecommendationsFromAI(
 }
 
 // ============================================================================
-// OpenAI Integration
+// Gemini Integration
 // ============================================================================
 
 /**
- * Calls OpenAI to generate recommendations based on the skill gap.
+ * Calls Gemini to generate recommendations based on the skill gap.
  * Separated from core logic to allow independent testing.
  */
-async function callOpenAIForRecommendations(
+async function callAIForRecommendations(
   input: RecommendationInput
 ): Promise<string> {
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    baseURL: process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
-  });
-
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [
-      {
-        role: 'system',
-        content: getRecommendationSystemPrompt(),
-      },
-      {
-        role: 'user',
-        content: getRecommendationUserPrompt(
-          input.applicantSkills,
-          input.jobRequiredSkills,
-          input.matchResult
-        ),
-      },
-    ],
-    temperature: 0.7,
-    max_tokens: 1500,
-  });
-
-  return response.choices[0]?.message?.content ?? '[]';
+  return callGemini(
+    getRecommendationSystemPrompt(),
+    getRecommendationUserPrompt(
+      input.applicantSkills,
+      input.jobRequiredSkills,
+      input.matchResult
+    ),
+    { temperature: 0.7, maxTokens: 1500 }
+  );
 }
 
 // ============================================================================
@@ -249,10 +232,10 @@ export async function generateRecommendations(
   let recommendations: RecommendationSuggestion[];
 
   try {
-    const aiResponse = await callOpenAIForRecommendations(input);
+    const aiResponse = await callAIForRecommendations(input);
     recommendations = parseRecommendationsFromAI(aiResponse);
   } catch {
-    // If OpenAI call fails, fall back to deterministic recommendations
+    // If Gemini call fails (quota, network, etc.), fall back to deterministic recommendations
     recommendations = [];
   }
 

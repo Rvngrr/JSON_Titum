@@ -36,11 +36,18 @@ interface SkillProfileProps {
   onSkillsChanged?: () => void;
 }
 
+interface JobSkillStat {
+  skillName: string;
+  jobCount: number;
+  totalJobs: number;
+}
+
 export default function SkillProfile({ onSkillsChanged }: SkillProfileProps) {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [skillProfile, setSkillProfile] = useState<SkillProfileType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [jobSkillStats, setJobSkillStats] = useState<Map<string, JobSkillStat>>(new Map());
 
   // Add skill form state
   const [newSkillName, setNewSkillName] = useState("");
@@ -127,6 +134,47 @@ export default function SkillProfile({ onSkillsChanged }: SkillProfileProps) {
   useEffect(() => {
     fetchSkillProfile();
   }, [fetchSkillProfile]);
+
+  // Fetch job skill stats to show how many jobs require each skill
+  useEffect(() => {
+    async function fetchJobStats() {
+      try {
+        const supabase = createClient();
+        
+        // Get total published jobs count
+        const { count: totalJobs } = await supabase
+          .from("job_descriptions")
+          .select("*", { count: "exact", head: true })
+          .eq("status", "published");
+
+        // Get all required skills from all published jobs
+        const { data: jobSkills } = await supabase
+          .from("job_required_skills")
+          .select("skill_name, job_description_id, job_descriptions!inner(status)")
+          .eq("job_descriptions.status", "published");
+
+        if (jobSkills && totalJobs) {
+          const statsMap = new Map<string, JobSkillStat>();
+          
+          for (const js of jobSkills) {
+            const key = js.skill_name.toLowerCase();
+            const existing = statsMap.get(key);
+            if (existing) {
+              existing.jobCount++;
+            } else {
+              statsMap.set(key, { skillName: js.skill_name, jobCount: 1, totalJobs: totalJobs || 0 });
+            }
+          }
+          
+          setJobSkillStats(statsMap);
+        }
+      } catch {
+        // Non-critical - tooltips just won't show job stats
+      }
+    }
+    
+    fetchJobStats();
+  }, [skills]);
 
   const updateSkillProfileTimestamp = useCallback(async () => {
     if (!skillProfile) return;
@@ -362,12 +410,57 @@ export default function SkillProfile({ onSkillsChanged }: SkillProfileProps) {
 
       {/* Skills list */}
       <div className="rounded-lg border border-gray-200 bg-white">
-        <div className="border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
           <h3 className="text-sm font-semibold text-gray-700">
             Your Skills{" "}
             <span className="font-normal text-gray-500">({skills.length})</span>
           </h3>
+          {skills.length > 0 && (
+            <button
+              type="button"
+              onClick={async () => {
+                if (!confirm("Remove all skills? This cannot be undone.")) return;
+                if (!skillProfile) return;
+                const supabase = createClient();
+                const { error: delErr } = await supabase
+                  .from("skills")
+                  .delete()
+                  .eq("skill_profile_id", skillProfile.id);
+                if (!delErr) {
+                  setSkills([]);
+                  await updateSkillProfileTimestamp();
+                  onSkillsChanged?.();
+                }
+              }}
+              className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+            >
+              Clear All
+            </button>
+          )}
         </div>
+
+        {/* Legend */}
+        {skills.length > 0 && (
+          <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 px-4 py-2 text-xs text-gray-500">
+            <span className="font-medium text-gray-600">Legend:</span>
+            <span className="inline-flex items-center gap-1">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-gray-300" />
+              Beginner
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-blue-400" />
+              Intermediate
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-purple-400" />
+              Advanced
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-green-400" />
+              Expert
+            </span>
+          </div>
+        )}
 
         {skills.length === 0 ? (
           <div className="px-4 py-8 text-center text-sm text-gray-500">
@@ -377,83 +470,49 @@ export default function SkillProfile({ onSkillsChanged }: SkillProfileProps) {
             </p>
           </div>
         ) : (
-          <ul className="divide-y divide-gray-100" aria-label="Skills list">
-            {skills.map((skill) => (
-              <li
-                key={skill.id}
-                className="flex items-center justify-between gap-3 px-4 py-3"
-              >
-                <div className="flex flex-1 flex-wrap items-center gap-2">
-                  {/* Skill name */}
-                  <span className="text-sm font-medium text-gray-900">
-                    {skill.name}
-                  </span>
-
-                  {/* Proficiency badge */}
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${PROFICIENCY_COLORS[skill.proficiency_level]}`}
-                  >
-                    {skill.proficiency_level.charAt(0).toUpperCase() +
-                      skill.proficiency_level.slice(1)}
-                  </span>
-
-                  {/* Source indicator */}
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${SOURCE_LABELS[skill.source].className}`}
-                  >
-                    {SOURCE_LABELS[skill.source].label}
-                  </span>
-                </div>
-
-                {/* Remove button */}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveSkill(skill.id)}
-                  disabled={removingSkillId === skill.id}
-                  className="flex-shrink-0 rounded-md p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
-                  aria-label={`Remove skill: ${skill.name}`}
+          <div className="flex flex-wrap gap-2 p-4" role="list" aria-label="Skills list">
+            {skills.map((skill) => {
+              const stat = jobSkillStats.get(skill.name.toLowerCase());
+              const jobPercent = stat ? Math.round((stat.jobCount / stat.totalJobs) * 100) : 0;
+              const tooltipText = stat
+                ? `${skill.proficiency_level.charAt(0).toUpperCase() + skill.proficiency_level.slice(1)} • Required by ${stat.jobCount}/${stat.totalJobs} jobs (${jobPercent}%)`
+                : `${skill.proficiency_level.charAt(0).toUpperCase() + skill.proficiency_level.slice(1)} • No matching jobs found`;
+              
+              return (
+                <div
+                  key={skill.id}
+                  role="listitem"
+                  title={tooltipText}
+                  className={`group relative inline-flex cursor-default items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-shadow hover:shadow-md ${PROFICIENCY_COLORS[skill.proficiency_level]}`}
                 >
-                  {removingSkillId === skill.id ? (
-                    <svg
-                      className="h-4 w-4 animate-spin"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                  ) : (
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
+                  <span>{skill.name}</span>
+                  {stat && stat.jobCount > 0 && (
+                    <span className="ml-0.5 rounded-full bg-black/10 px-1.5 py-0 text-[10px]">
+                      {jobPercent}%
+                    </span>
                   )}
-                </button>
-              </li>
-            ))}
-          </ul>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSkill(skill.id)}
+                    disabled={removingSkillId === skill.id}
+                    className="ml-0.5 rounded-full p-0.5 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/10 focus:opacity-100 focus:outline-none disabled:opacity-30"
+                    aria-label={`Remove skill: ${skill.name}`}
+                  >
+                    {removingSkillId === skill.id ? (
+                      <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                      </svg>
+                    ) : (
+                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </section>

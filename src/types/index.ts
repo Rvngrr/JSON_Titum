@@ -215,8 +215,41 @@ export interface ResumeParseResponse {
     /** Inferred proficiency level */
     proficiency_level: 'beginner' | 'intermediate' | 'advanced' | 'expert';
   }>;
+  /** Structured resume profile data (projects, experience, certs) */
+  profile?: ResumeProfile;
   /** Raw text extracted from the resume */
   raw_text?: string;
   /** Error message if parsing failed */
   error?: string;
+}
+
+/**
+ * Structured resume profile extracted by AI.
+ * Captures projects, experience, certifications, and achievements.
+ */
+export interface ResumeProfile {
+  /** Work experience entries */
+  experience: Array<{
+    title: string;
+    organization: string;
+    duration: string;
+    highlights: string[];
+  }>;
+  /** Project entries with technologies used and outcomes */
+  projects: Array<{
+    name: string;
+    description: string;
+    technologies: string[];
+    outcome?: string;
+  }>;
+  /** Certifications and seminars */
+  certifications: string[];
+  /** Notable achievements and awards */
+  achievements: string[];
+  /** Education background */
+  education: Array<{
+    degree: string;
+    institution: string;
+    year: string;
+  }>;
 }

@@ -345,6 +345,7 @@ export default function ApplicantRankings({ jobId }: ApplicantRankingsProps) {
               </td>
               <td className="py-3 px-4 text-gray-800">
                 {applicant.name}
+                <ViewResumeButton applicantId={applicant.applicantId} />
               </td>
               <td className="py-3 px-4 text-right font-medium text-gray-900">
                 {applicant.matchPercentage}%
@@ -361,6 +362,7 @@ export default function ApplicantRankings({ jobId }: ApplicantRankingsProps) {
               </td>
               <td className="py-3 px-4 text-gray-800">
                 {applicant.name}
+                <ViewResumeButton applicantId={applicant.applicantId} />
               </td>
               <td className="py-3 px-4 text-right">
                 <span className="inline-block rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
@@ -372,5 +374,48 @@ export default function ApplicantRankings({ jobId }: ApplicantRankingsProps) {
         </tbody>
       </table>
     </section>
+  );
+}
+
+/**
+ * Button that opens an applicant's resume PDF via the server-side view API.
+ * Uses /api/resume/view which generates a signed URL securely.
+ */
+function ViewResumeButton({ applicantId }: { applicantId: string }) {
+  const [loading, setLoading] = useState(false);
+
+  async function handleViewResume(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setLoading(true);
+
+    try {
+      const response = await fetch(`/api/resume/view?applicant_id=${applicantId}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.error || "Unable to load resume.");
+        return;
+      }
+
+      if (data.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch {
+      alert("Failed to load resume.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleViewResume}
+      disabled={loading}
+      className="ml-2 inline-flex items-center rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+    >
+      {loading ? "..." : "View Resume"}
+    </button>
   );
 }

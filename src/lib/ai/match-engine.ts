@@ -8,13 +8,14 @@
  * - `calculateWeightedScore()` is a pure function for testability (no AI dependency)
  */
 
-import OpenAI from "openai";
 import type { Skill, JobRequiredSkill } from "@/types";
 import {
   SKILL_MATCHING_SYSTEM_PROMPT,
   buildSkillMatchingUserPrompt,
   type SkillMatchingResponse,
 } from "./prompts";
+import { callGemini } from "./gemini";
+import { performLocalMatching } from "./local-matcher";
 
 // ============================================================================
 // Types
@@ -110,27 +111,13 @@ export function calculateWeightedScore(
 }
 
 // ============================================================================
-// OpenAI Semantic Matching
+// Skill Matching (Local by default, AI as optional fallback)
 // ============================================================================
 
 /**
- * Creates an OpenAI client instance using the OPENAI_API_KEY environment variable.
- */
-function createOpenAIClient(): OpenAI {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      "OPENAI_API_KEY environment variable is not set. Cannot perform semantic skill matching."
-    );
-  }
-  return new OpenAI({ apiKey, baseURL: process.env.OPENAI_BASE_URL || "https://api.openai.com/v1" });
-}
-
-/**
- * Uses OpenAI to perform semantic/fuzzy skill matching between applicant skills
- * and job required skills.
- *
- * For example, "React" will match "React.js", "JS" will match "JavaScript", etc.
+ * Performs skill matching between applicant skills and job required skills.
+ * Uses local synonym-based matching (zero API calls) for efficiency.
+ * Falls back to Gemini AI only if USE_AI_MATCHING=true is set in env.
  *
  * @param applicantSkills - Array of skill names from the applicant's profile
  * @param jobSkills - Array of job required skill objects with importance levels
@@ -155,61 +142,9 @@ export async function performSemanticMatching(
     }));
   }
 
-  const openai = createOpenAIClient();
-  const jobSkillNames = jobSkills.map((js) => js.skill_name);
-
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      { role: "system", content: SKILL_MATCHING_SYSTEM_PROMPT },
-      {
-        role: "user",
-        content: buildSkillMatchingUserPrompt(applicantSkills, jobSkillNames),
-      },
-    ],
-    temperature: 0,
-    response_format: { type: "json_object" },
-  });
-
-  const content = response.choices[0]?.message?.content;
-  if (!content) {
-    throw new Error("OpenAI returned an empty response for skill matching.");
-  }
-
-  let parsed: SkillMatchingResponse;
-  try {
-    parsed = JSON.parse(content) as SkillMatchingResponse;
-  } catch {
-    throw new Error(
-      `Failed to parse OpenAI skill matching response as JSON: ${content}`
-    );
-  }
-
-  if (!parsed.matches || !Array.isArray(parsed.matches)) {
-    throw new Error(
-      `OpenAI skill matching response missing 'matches' array: ${content}`
-    );
-  }
-
-  // Build a lookup from job skill name to importance for enrichment
-  const importanceMap = new Map<string, "required" | "preferred">();
-  for (const js of jobSkills) {
-    importanceMap.set(js.skill_name.toLowerCase(), js.importance);
-  }
-
-  // Map the AI response back to SkillMatchDetail with importance levels
-  const matchDetails: SkillMatchDetail[] = parsed.matches.map((match) => {
-    const importance =
-      importanceMap.get(match.jobSkill.toLowerCase()) ?? "preferred";
-    return {
-      jobSkill: match.jobSkill,
-      applicantSkill: match.applicantSkill,
-      isMatch: match.isMatch,
-      importance,
-    };
-  });
-
-  return matchDetails;
+  // Use local matching (no API calls, instant, free)
+  const localResults = performLocalMatching(applicantSkills, jobSkills);
+  return localResults;
 }
 
 // ============================================================================
