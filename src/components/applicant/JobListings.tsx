@@ -119,6 +119,42 @@ export default function JobListings() {
         });
 
         setJobs(jobsWithMatch);
+
+        // Trigger match calculation in background for any jobs that haven't been calculated yet
+        const uncalculatedJobs = jobsWithMatch.filter((j) => j.matchPercentage === null);
+        if (uncalculatedJobs.length > 0) {
+          // Calculate matches for this applicant against all jobs
+          fetch("/api/match/calculate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ applicant_id: user.id }),
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.success && data.results?.length > 0) {
+                // Update the jobs with the new match results
+                setJobs((prevJobs) => {
+                  const newMatchMap = new Map<string, number>();
+                  for (const result of data.results) {
+                    newMatchMap.set(result.job_description_id, result.match_percentage);
+                  }
+                  const updated = prevJobs.map((job) => ({
+                    ...job,
+                    matchPercentage: newMatchMap.get(job.id) ?? job.matchPercentage,
+                  }));
+                  updated.sort((a, b) => {
+                    const aMatch = a.matchPercentage ?? -1;
+                    const bMatch = b.matchPercentage ?? -1;
+                    return bMatch - aMatch;
+                  });
+                  return updated;
+                });
+              }
+            })
+            .catch(() => {
+              // Non-blocking — match calculation failure doesn't break the page
+            });
+        }
       } catch {
         setError("An unexpected error occurred.");
       } finally {
