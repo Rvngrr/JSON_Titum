@@ -5,4 +5,4 @@ export {
   getApplicationsForJob,
 } from "./service";
 
-export type { Application, ApplicationService } from "./types";
+export type { Application, ApplicationService, ApplicationStatus } from "./types";

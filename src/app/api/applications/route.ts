@@ -1,23 +1,39 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createApplication } from "@/lib/applications/service";
+import type { ApplicationStatus } from "@/lib/applications/types";
+
+/**
+ * Valid application statuses accepted by this route.
+ */
+const VALID_STATUSES: ApplicationStatus[] = ["applied", "applied_externally"];
 
 /**
  * POST /api/applications
  *
  * Creates a new job application for the authenticated user.
- * Validates authentication, request body, and job status before
- * delegating to the ApplicationService.
+ * Supports both internal applications (status: 'applied') and
+ * external application confirmations (status: 'applied_externally').
+ *
+ * The authenticated user IS the applicant.
+ *
+ * Request body:
+ * - jobDescriptionId: string (required) — UUID of the job to apply to
+ * - status: 'applied' | 'applied_externally' (optional, defaults to 'applied')
  *
  * Responses:
  * - 201: Application created successfully
+ * - 400: Invalid request body or status
  * - 401: User is not authenticated
+ * - 409: User has already applied to this job (duplicate)
  * - 422: Job is not published or not found
- * - 409: User has already applied to this job
+ * - 503: Applications table not yet created
  * - 500: Unexpected server error
+ *
+ * Requirements: 20.2, 20.3, 20.4
  */
 export async function POST(request: NextRequest) {
-  // Authenticate the user
+  // 1. Authenticate the user
   const supabase = await createClient();
   const {
     data: { user },
@@ -31,8 +47,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Parse and validate request body
-  let body: { job_description_id?: string };
+  // 2. Parse and validate request body
+  let body: { jobDescriptionId?: string; job_description_id?: string; status?: string };
   try {
     body = await request.json();
   } catch {
@@ -42,18 +58,33 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { job_description_id } = body;
+  // Accept both camelCase and snake_case for job description ID
+  const jobDescriptionId = body.jobDescriptionId || body.job_description_id;
 
-  if (!job_description_id || typeof job_description_id !== "string") {
+  if (!jobDescriptionId || typeof jobDescriptionId !== "string") {
     return Response.json(
-      { success: false, error: "invalid_body", message: "job_description_id is required." },
+      { success: false, error: "invalid_body", message: "jobDescriptionId is required and must be a string." },
       { status: 400 }
     );
   }
 
-  // Create the application via the service layer
+  // Validate status if provided (defaults to 'applied')
+  const status: ApplicationStatus = (body.status as ApplicationStatus) || "applied";
+
+  if (!VALID_STATUSES.includes(status)) {
+    return Response.json(
+      {
+        success: false,
+        error: "invalid_status",
+        message: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}`,
+      },
+      { status: 400 }
+    );
+  }
+
+  // 3. Create the application via the service layer
   try {
-    const application = await createApplication(user.id, job_description_id);
+    const application = await createApplication(user.id, jobDescriptionId, status);
 
     return Response.json(
       { success: true, application },

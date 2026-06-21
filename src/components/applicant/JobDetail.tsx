@@ -34,6 +34,7 @@ export default function JobDetail({ jobId }: JobDetailProps) {
   });
 
   const [hasApplied, setHasApplied] = useState(false);
+  const [applicationStatus, setApplicationStatus] = useState<"applied" | "applied_externally" | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
@@ -140,13 +141,14 @@ export default function JobDetail({ jobId }: JobDetailProps) {
         try {
           const { data: applicationData } = await supabase
             .from("applications")
-            .select("id")
+            .select("id, status")
             .eq("applicant_id", user.id)
             .eq("job_description_id", jobId)
             .maybeSingle();
 
           if (applicationData) {
             setHasApplied(true);
+            setApplicationStatus(applicationData.status as "applied" | "applied_externally");
           }
         } catch {
           // Graceful degradation: if status fetch fails, default to not_applied (idle state)
@@ -323,7 +325,7 @@ export default function JobDetail({ jobId }: JobDetailProps) {
           <div className="flex-1">
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-gray-900">{job.title}</h1>
-              <ApplicationStatusBadge applied={hasApplied} />
+              <ApplicationStatusBadge applied={hasApplied} applicationStatus={applicationStatus} />
             </div>
             <p className="mt-1 text-sm text-gray-500">
               Posted {new Date(job.created_at).toLocaleDateString()}
@@ -342,9 +344,17 @@ export default function JobDetail({ jobId }: JobDetailProps) {
             </div>
             <ApplyButton
               jobId={jobId}
-              initialStatus={hasApplied ? "applied" : "not_applied"}
+              initialStatus={hasApplied ? (applicationStatus === "applied_externally" ? "applied_externally" : "applied") : "not_applied"}
               jobStatus={job.status}
-              onApplicationSuccess={() => setHasApplied(true)}
+              jobLink={job.job_link}
+              jobTitle={job.title}
+              matchPercentage={matchResult?.match_percentage ?? null}
+              missingSkills={matchResult?.missing_skills ?? []}
+              requiredSkills={requiredSkills.map((s) => ({ skill_name: s.skill_name, importance: s.importance }))}
+              onApplicationSuccess={() => {
+                setHasApplied(true);
+                setApplicationStatus(job.job_link ? "applied_externally" : "applied");
+              }}
             />
           </div>
         </div>

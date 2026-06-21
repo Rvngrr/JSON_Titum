@@ -97,7 +97,56 @@ async function callOpenAIProvider(
 }
 
 /**
- * Calls AI with cascading fallback: Gemini → OpenAI → throws error.
+ * Calls LLM7.io API as third fallback.
+ * OpenAI-compatible endpoint — free with token for higher rate limits.
+ */
+async function callLLM7Provider(
+  systemPrompt: string,
+  userPrompt: string,
+  options?: { temperature?: number; maxTokens?: number }
+): Promise<string> {
+  const token = process.env.LLM7_TOKEN;
+  
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const response = await fetch("https://api.llm7.io/v1/chat/completions", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: options?.temperature ?? 0.1,
+      max_tokens: options?.maxTokens ?? 2000,
+      response_format: { type: "json_object" },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`LLM7 error [${response.status}]: ${errorBody.substring(0, 200)}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content;
+
+  if (!content) {
+    throw new Error("LLM7 returned an empty response.");
+  }
+
+  return content;
+}
+
+/**
+ * Calls AI with cascading fallback: Gemini → OpenAI → LLM7 → throws error.
  * The caller should catch the error and use local fallback.
  * 
  * Logs which provider was used for transparency.
@@ -131,6 +180,16 @@ export async function callGemini(
     }
   }
 
-  // Both failed — throw so the caller uses local fallback
-  throw new Error("All AI providers exhausted (Gemini + OpenAI both failed)");
+  // Try 3: LLM7
+  try {
+    const result = await callLLM7Provider(systemPrompt, userPrompt, options);
+    console.log("[AI] Used: LLM7 ✓");
+    return result;
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.warn("[AI] LLM7 failed:", msg.substring(0, 100));
+  }
+
+  // All failed — throw so the caller uses local fallback
+  throw new Error("All AI providers exhausted (Gemini + OpenAI + LLM7 all failed)");
 }

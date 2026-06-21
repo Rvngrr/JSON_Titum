@@ -10,8 +10,8 @@ export default function CreateJobPage() {
           Create New Job Posting
         </h1>
         <p className="mt-2 text-gray-600">
-          Fill in the details below to publish a new job posting. Applicants
-          will be matched automatically once published.
+          Fill in the details below to create a new job posting. It will be
+          saved as a draft so you can review it before publishing.
         </p>
       </header>
 
