@@ -85,7 +85,17 @@ export async function GET(
     );
   }
 
-  // 5. Calculate ATS score using the 2-step LLM pipeline (with cache)
+  // 5. Fetch job required skills to use as fallback keywords (in case LLM is unavailable)
+  const { data: jobRequiredSkills } = await adminClient
+    .from("job_required_skills")
+    .select("skill_name")
+    .eq("job_description_id", jobId);
+
+  const fallbackKeywords = jobRequiredSkills
+    ? jobRequiredSkills.map((s: { skill_name: string }) => s.skill_name)
+    : undefined;
+
+  // 6. Calculate ATS score using the 2-step LLM pipeline (with cache)
   let result: ATSScoreResult;
 
   try {
@@ -94,7 +104,8 @@ export async function GET(
       job.description,
       job.qualifications ?? null,
       job.id,
-      jobId
+      jobId,
+      fallbackKeywords
     );
   } catch (error) {
     const message =

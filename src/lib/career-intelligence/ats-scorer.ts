@@ -489,7 +489,8 @@ export async function calculateATSScore(
   jobDescription: string,
   qualifications: string | null,
   jobDescriptionId: string,
-  jobId: string
+  jobId: string,
+  fallbackKeywords?: string[]
 ): Promise<ATSScoreResult> {
   // Step 1: Extract keywords from job description
   const { keywords, source: keywordSource } = await extractKeywords(
@@ -498,8 +499,14 @@ export async function calculateATSScore(
     jobDescriptionId
   );
 
+  // If local TF-IDF keywords are poor quality and we have fallback (job_required_skills), use those
+  const effectiveKeywords =
+    keywordSource === 'local' && fallbackKeywords && fallbackKeywords.length > 0
+      ? fallbackKeywords
+      : keywords;
+
   // Edge case: zero keywords extracted
-  if (keywords.length === 0) {
+  if (effectiveKeywords.length === 0) {
     return {
       score: 0,
       totalKeywords: 0,
@@ -512,10 +519,10 @@ export async function calculateATSScore(
 
   // Step 2: Match resume against keywords
   const resumeHash = computeHash(resumeText);
-  const analysis = await analyzeResumeMatch(resumeText, keywords, jobId, resumeHash);
+  const analysis = await analyzeResumeMatch(resumeText, effectiveKeywords, jobId, resumeHash);
 
   // Step 3: Compute score
-  const totalKeywords = keywords.length;
+  const totalKeywords = effectiveKeywords.length;
   const matchedCount = analysis.matchedKeywords.length;
   const rawScore = Math.round((matchedCount / totalKeywords) * 100);
   const score = Math.max(0, Math.min(100, rawScore));

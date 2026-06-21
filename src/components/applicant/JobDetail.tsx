@@ -13,6 +13,10 @@ import type {
   MatchResult,
   Recommendation,
 } from "@/types";
+import type {
+  ATSScoreResult,
+  SkillROIResult,
+} from "@/lib/career-intelligence/types";
 
 interface JobDetailProps {
   jobId: string;
@@ -39,6 +43,14 @@ export default function JobDetail({ jobId }: JobDetailProps) {
   const [error, setError] = useState<string | null>(null);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [recommendationsError, setRecommendationsError] = useState<string | null>(null);
+
+  // ATS Score state
+  const [atsScore, setAtsScore] = useState<ATSScoreResult | null>(null);
+  const [atsLoading, setAtsLoading] = useState(false);
+
+  // Skill ROI state
+  const [skillROI, setSkillROI] = useState<SkillROIResult[]>([]);
+  const [skillROILoading, setSkillROILoading] = useState(false);
 
   const fetchRecommendations = useCallback(
     async (applicantId: string, jobDescriptionId: string) => {
@@ -206,6 +218,43 @@ export default function JobDetail({ jobId }: JobDetailProps) {
 
     fetchJobDetail();
   }, [jobId, fetchRecommendations]);
+
+  // Fetch ATS Score and Skill ROI data
+  useEffect(() => {
+    async function fetchATSScore() {
+      setAtsLoading(true);
+      try {
+        const response = await fetch(`/api/jobs/${jobId}/ats-score`);
+        if (response.ok) {
+          const data = await response.json();
+          setAtsScore(data as ATSScoreResult);
+        }
+        // If 404 or 500, silently skip — don't show the section
+      } catch {
+        // Graceful degradation: don't break the page
+      } finally {
+        setAtsLoading(false);
+      }
+    }
+
+    async function fetchSkillROI() {
+      setSkillROILoading(true);
+      try {
+        const response = await fetch(`/api/jobs/${jobId}/skill-roi`);
+        if (response.ok) {
+          const data = await response.json();
+          setSkillROI(data as SkillROIResult[]);
+        }
+      } catch {
+        // Graceful degradation
+      } finally {
+        setSkillROILoading(false);
+      }
+    }
+
+    fetchATSScore();
+    fetchSkillROI();
+  }, [jobId]);
 
   if (loading) {
     return (
@@ -461,6 +510,254 @@ export default function JobDetail({ jobId }: JobDetailProps) {
           <p className="whitespace-pre-wrap text-gray-700">
             {job.qualifications}
           </p>
+        </section>
+      )}
+
+      {/* ATS Compatibility Score */}
+      {atsLoading && (
+        <section className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-3 text-lg font-semibold text-gray-900">
+            ATS Compatibility Score
+          </h2>
+          <div className="flex items-center gap-2 text-gray-500">
+            <svg
+              className="h-4 w-4 animate-spin"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
+            </svg>
+            <span className="text-sm">Analyzing ATS compatibility...</span>
+          </div>
+        </section>
+      )}
+      {!atsLoading && atsScore && (
+        <section className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-3 text-lg font-semibold text-gray-900">
+            ATS Compatibility Score
+          </h2>
+
+          {/* Score display with colored bar */}
+          <div className="mb-4">
+            <div className="flex items-end gap-3">
+              <span
+                className={`text-4xl font-bold ${
+                  atsScore.score >= 80
+                    ? "text-green-600"
+                    : atsScore.score >= 60
+                    ? "text-yellow-600"
+                    : "text-red-600"
+                }`}
+              >
+                {atsScore.score}
+              </span>
+              <span className="mb-1 text-sm text-gray-500">/ 100</span>
+            </div>
+            <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-gray-200">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  atsScore.score >= 80
+                    ? "bg-green-500"
+                    : atsScore.score >= 60
+                    ? "bg-yellow-500"
+                    : "bg-red-500"
+                }`}
+                style={{ width: `${atsScore.score}%` }}
+              />
+            </div>
+            {atsScore.analysisSource === "local" && (
+              <p className="mt-2 text-xs text-gray-500 italic">
+                Score calculated using basic matching
+              </p>
+            )}
+          </div>
+
+          {/* Matched Keywords */}
+          {atsScore.matchedKeywords.length > 0 && (
+            <div className="mb-4">
+              <h3 className="mb-2 text-sm font-medium text-gray-700">
+                Matched Keywords
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {atsScore.matchedKeywords.map((kw, idx) => (
+                  <span
+                    key={idx}
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      kw.matchType === "exact"
+                        ? "bg-green-100 text-green-800"
+                        : kw.matchType === "synonym"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-purple-100 text-purple-800"
+                    }`}
+                  >
+                    {kw.keyword}
+                    <span className="ml-1 opacity-60">({kw.matchType})</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Missing Keywords */}
+          {atsScore.missingKeywords.length > 0 && (
+            <div className="mb-4">
+              <h3 className="mb-2 text-sm font-medium text-gray-700">
+                Missing Keywords
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {atsScore.missingKeywords.map((kw, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800"
+                  >
+                    {kw}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Suggestions ordered by impact */}
+          {atsScore.suggestions.length > 0 && (
+            <div>
+              <h3 className="mb-2 text-sm font-medium text-gray-700">
+                Suggestions
+              </h3>
+              <ul className="space-y-2">
+                {[...atsScore.suggestions]
+                  .sort((a, b) => {
+                    const order = { high: 0, medium: 1, low: 2 };
+                    return order[a.impact] - order[b.impact];
+                  })
+                  .map((suggestion, idx) => (
+                    <li
+                      key={idx}
+                      className="flex items-start gap-2 rounded-md border border-gray-100 bg-gray-50 p-3"
+                    >
+                      <span
+                        className={`mt-0.5 inline-block h-2 w-2 flex-shrink-0 rounded-full ${
+                          suggestion.impact === "high"
+                            ? "bg-red-500"
+                            : suggestion.impact === "medium"
+                            ? "bg-yellow-500"
+                            : "bg-gray-400"
+                        }`}
+                        aria-label={`${suggestion.impact} impact`}
+                      />
+                      <div>
+                        <p className="text-sm text-gray-800">
+                          {suggestion.suggestion}
+                        </p>
+                        <p className="mt-0.5 text-xs text-gray-500">
+                          Add &quot;{suggestion.keyword}&quot; to{" "}
+                          {suggestion.section}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Hidden Gem Badge */}
+      {matchResult &&
+        matchResult.match_percentage >= 60 &&
+        matchResult.match_percentage <= 79 &&
+        matchResult.missing_skills &&
+        matchResult.missing_skills.length > 0 &&
+        matchResult.missing_skills.length <= 5 && (
+          <section className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-5 shadow-sm">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl" role="img" aria-label="Hidden Gem">
+                🔥
+              </span>
+              <div>
+                <h2 className="text-lg font-semibold text-amber-900">
+                  Hidden Gem
+                </h2>
+                <p className="text-sm text-amber-800">
+                  Only {matchResult.missing_skills.length} easy skill
+                  {matchResult.missing_skills.length === 1 ? "" : "s"} away!
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
+
+      {/* Skill ROI Analysis */}
+      {skillROILoading && (
+        <section className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-3 text-lg font-semibold text-gray-900">
+            Skill ROI Analysis
+          </h2>
+          <div className="flex items-center gap-2 text-gray-500">
+            <svg
+              className="h-4 w-4 animate-spin"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
+            </svg>
+            <span className="text-sm">Calculating skill ROI...</span>
+          </div>
+        </section>
+      )}
+      {!skillROILoading && skillROI.length > 0 && (
+        <section className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-3 text-lg font-semibold text-gray-900">
+            Skill ROI Analysis
+          </h2>
+          <p className="mb-3 text-sm text-gray-500">
+            Top skills to learn for the biggest match improvement
+          </p>
+          <ul className="space-y-3">
+            {skillROI
+              .sort((a, b) => b.scoreDelta - a.scoreDelta)
+              .slice(0, 5)
+              .map((skill, idx) => (
+                <li
+                  key={idx}
+                  className="flex items-center justify-between rounded-md border border-gray-100 bg-gray-50 px-4 py-3"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-900">
+                      Learn {skill.skillName}
+                    </span>
+                  </div>
+                  <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-sm font-semibold text-green-800">
+                    +{skill.scoreDelta}% match
+                  </span>
+                </li>
+              ))}
+          </ul>
         </section>
       )}
 

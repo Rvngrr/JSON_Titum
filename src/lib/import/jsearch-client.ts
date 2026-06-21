@@ -1,7 +1,7 @@
 import type { JSearchResponse } from './types';
 
-const JSEARCH_API_HOST = 'jobs-api14.p.rapidapi.com';
-const JSEARCH_API_BASE_URL = `https://${JSEARCH_API_HOST}/v2/list`;
+const JSEARCH_API_HOST = 'jsearch.p.rapidapi.com';
+const JSEARCH_API_BASE_URL = `https://${JSEARCH_API_HOST}/search`;
 
 /** Request timeout in milliseconds */
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -34,7 +34,6 @@ export async function fetchJobs(query: string, location: string): Promise<JSearc
     page: '1',
     num_pages: '1',
     country: 'ph',
-    language: 'en',
   });
 
   const url = `${JSEARCH_API_BASE_URL}?${params.toString()}`;
