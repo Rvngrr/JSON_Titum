@@ -102,8 +102,12 @@ export default function ApplicantProfilePage() {
   }, []);
 
   const handleSkillsExtracted = useCallback(() => {
+    // Increment key to trigger full profile reload (useEffect depends on skillsKey)
+    // This reloads work_experience, education, certifications, and skills from the DB
     setSkillsKey((prev) => prev + 1);
-  }, []);
+    // Also trigger match recalculation since new skills were extracted
+    triggerMatchRecalculation();
+  }, [triggerMatchRecalculation]);
 
   const handleSkillsChanged = useCallback(() => {
     triggerMatchRecalculation();

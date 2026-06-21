@@ -91,11 +91,51 @@ export async function POST(request: Request) {
 
     // 3b. Extract full profile (projects, experience, certs, achievements)
     console.log("[resume/parse] Step 3b: Extracting structured profile...");
-    const resumeProfile = await extractResumeProfile(rawText);
+    let resumeProfile = await extractResumeProfile(rawText);
     console.log("[resume/parse] Step 3b done:", resumeProfile.projects.length, "projects,", resumeProfile.experience.length, "experiences");
 
-    // 4. Upsert skill_profile record for the user
+    // 3c. If AI returned empty profile, use local fallback parser
+    if (resumeProfile.experience.length === 0 && resumeProfile.education.length === 0) {
+      console.log("[resume/parse] Step 3c: AI profile empty, using local fallback parser...");
+      const localProfile = extractProfileLocally(rawText);
+      if (localProfile.experience.length > 0) resumeProfile.experience = localProfile.experience;
+      if (localProfile.education.length > 0) resumeProfile.education = localProfile.education;
+      if (localProfile.certifications.length > 0) resumeProfile.certifications = localProfile.certifications;
+      if (localProfile.projects.length > 0) resumeProfile.projects = localProfile.projects;
+      if (localProfile.achievements.length > 0) resumeProfile.achievements = localProfile.achievements;
+      console.log("[resume/parse] Step 3c done: local fallback found", localProfile.education.length, "education,", localProfile.experience.length, "experience,", localProfile.certifications.length, "certifications");
+    }
+
+    // 4. Upsert skill_profile record for the user — include structured profile data
     console.log("[resume/parse] Step 4: Upserting skill_profile for user:", user_id);
+
+    // Convert extracted profile into the database format
+    const workExperience = resumeProfile.experience.map((exp, idx) => ({
+      id: `resume-exp-${idx}`,
+      title: exp.title,
+      company: exp.organization,
+      industry: '',
+      startDate: exp.duration.split(' - ')[0]?.trim() || '',
+      endDate: exp.duration.split(' - ')[1]?.trim() || '',
+      isCurrent: exp.duration.toLowerCase().includes('present'),
+      description: exp.highlights.join('\n'),
+    }));
+
+    const education = resumeProfile.education.map((edu, idx) => ({
+      id: `resume-edu-${idx}`,
+      degree: edu.degree,
+      institution: edu.institution,
+      fieldOfStudy: '',
+      graduationYear: edu.year,
+    }));
+
+    const certifications = resumeProfile.certifications.map((cert, idx) => ({
+      id: `resume-cert-${idx}`,
+      name: cert,
+      issuer: '',
+      date: '',
+    }));
+
     const { data: skillProfile, error: upsertError } = await supabase
       .from("skill_profiles")
       .upsert(
@@ -103,6 +143,9 @@ export async function POST(request: Request) {
           user_id,
           resume_file_path: file_path,
           raw_resume_text: rawText,
+          work_experience: workExperience.length > 0 ? workExperience : undefined,
+          education: education.length > 0 ? education : undefined,
+          certifications: certifications.length > 0 ? certifications : undefined,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "user_id" }
@@ -493,6 +536,219 @@ ${resumeText}
       education: [],
     };
   }
+}
+
+
+/**
+ * Local fallback: Extracts a structured profile (education, experience, certifications)
+ * from resume text by detecting section headers and parsing entries within each section.
+ * Used when AI extraction returns empty results.
+ */
+function extractProfileLocally(rawText: string): ResumeProfile {
+  const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+
+  // Detect section boundaries by common headings
+  const sectionIndices: Array<{ type: string; startIdx: number }> = [];
+  const headerPatterns: Record<string, RegExp> = {
+    education: /^(education|academic\s*background|qualification)/i,
+    experience: /^(experience|work\s*experience|employment|internship|leadership)/i,
+    projects: /^(projects|portfolio|personal\s*projects|academic\s*projects)/i,
+    certifications: /^(certification|certifications?\s*&?\s*seminars?|seminars?|training|certificates?)/i,
+    achievements: /^(achievement|achievements|awards?|honor)/i,
+    skills: /^(skills|technical\s*skills|programming|additional\s*skills)/i,
+  };
+
+  lines.forEach((line, idx) => {
+    for (const [section, pattern] of Object.entries(headerPatterns)) {
+      if (pattern.test(line) && line.length < 60) {
+        sectionIndices.push({ type: section, startIdx: idx });
+      }
+    }
+  });
+
+  // Sort by index
+  sectionIndices.sort((a, b) => a.startIdx - b.startIdx);
+
+  // Extract content lines for each section
+  function getSectionLines(sectionType: string): string[] {
+    const results: string[] = [];
+    for (let i = 0; i < sectionIndices.length; i++) {
+      if (sectionIndices[i].type === sectionType) {
+        const start = sectionIndices[i].startIdx + 1;
+        const end = i + 1 < sectionIndices.length ? sectionIndices[i + 1].startIdx : lines.length;
+        for (let j = start; j < end; j++) {
+          if (lines[j] && lines[j].length > 0) {
+            results.push(lines[j]);
+          }
+        }
+      }
+    }
+    return results;
+  }
+
+  // Parse education entries
+  // Pattern: institution name + year range on same or adjacent lines
+  const educationLines = getSectionLines('education');
+  const education: ResumeProfile['education'] = [];
+  const yearRangePattern = /(\d{4})\s*[-–—]\s*(\d{4}|[Pp]resent)/;
+
+  let i = 0;
+  while (i < educationLines.length) {
+    const line = educationLines[i];
+    const yearMatch = line.match(yearRangePattern);
+
+    if (yearMatch) {
+      // This line has a year range — it's likely "Institution YYYY - YYYY"
+      const institution = line.replace(yearRangePattern, '').trim();
+      const endYear = yearMatch[2].toLowerCase() === 'present' ? 'Present' : yearMatch[2];
+
+      // Look ahead for a degree line (next line without a year range)
+      let degree = '';
+      if (i + 1 < educationLines.length && !yearRangePattern.test(educationLines[i + 1])) {
+        // Check if next line looks like a degree
+        const nextLine = educationLines[i + 1];
+        if (/bachelor|master|associate|diploma|doctor|b\.?s\.?|m\.?s\.?|ph\.?d|science|arts|engineering/i.test(nextLine)) {
+          degree = nextLine;
+          i++;
+        }
+      }
+
+      education.push({
+        degree: degree || '',
+        institution: institution || line.replace(yearRangePattern, '').trim(),
+        year: endYear,
+      });
+    } else if (/bachelor|master|associate|diploma|doctor|b\.?s\.?|m\.?s\.?|ph\.?d/i.test(line)) {
+      // This line is a degree without a year — check if previous entry needs it
+      if (education.length > 0 && !education[education.length - 1].degree) {
+        education[education.length - 1].degree = line;
+      } else {
+        education.push({ degree: line, institution: '', year: '' });
+      }
+    }
+    i++;
+  }
+
+  // Parse experience entries
+  // Pattern: role/organization + year range, with possible highlights below
+  const experienceLines = getSectionLines('experience');
+  const experience: ResumeProfile['experience'] = [];
+
+  i = 0;
+  while (i < experienceLines.length) {
+    const line = experienceLines[i];
+    const yearMatch = line.match(yearRangePattern);
+
+    if (yearMatch) {
+      const titleOrOrg = line.replace(yearRangePattern, '').replace(/[-–—,]\s*$/, '').trim();
+      const duration = yearMatch[0];
+
+      // Try to split into title and organization
+      // Common separators: " - ", " at ", " | ", ","
+      let title = titleOrOrg;
+      let organization = '';
+      const separatorMatch = titleOrOrg.match(/^(.+?)\s*[-–—|]\s*(.+)$/);
+      if (separatorMatch) {
+        organization = separatorMatch[1].trim();
+        title = separatorMatch[2].trim() || separatorMatch[1].trim();
+      } else {
+        organization = titleOrOrg;
+        title = '';
+      }
+
+      // Collect highlight lines (lines that follow without a year range, often starting with • or -)
+      const highlights: string[] = [];
+      while (i + 1 < experienceLines.length && !yearRangePattern.test(experienceLines[i + 1])) {
+        i++;
+        const hLine = experienceLines[i].replace(/^[•\-*]\s*/, '').trim();
+        if (hLine.length > 0 && hLine.length < 200) {
+          highlights.push(hLine);
+        }
+      }
+
+      experience.push({
+        title: title || organization,
+        organization: organization,
+        duration: duration,
+        highlights: highlights,
+      });
+    }
+    i++;
+  }
+
+  // Parse certifications — lines under the certifications header that aren't empty
+  const certLines = getSectionLines('certifications');
+  const certifications: string[] = [];
+  for (const line of certLines) {
+    // Skip lines that are just dates or very short
+    if (line.length > 3 && !/^\d{4}$/.test(line)) {
+      const cleaned = line.replace(/^[•\-*]\s*/, '').trim();
+      if (cleaned.length > 3) {
+        certifications.push(cleaned);
+      }
+    }
+  }
+
+  // Parse achievements
+  const achievementLines = getSectionLines('achievements');
+  const achievements: string[] = [];
+  for (const line of achievementLines) {
+    const cleaned = line.replace(/^[•\-*]\s*/, '').trim();
+    if (cleaned.length > 3) {
+      achievements.push(cleaned);
+    }
+  }
+
+  // Parse projects
+  const projectLines = getSectionLines('projects');
+  const projects: ResumeProfile['projects'] = [];
+  i = 0;
+  while (i < projectLines.length) {
+    const line = projectLines[i];
+    // A project entry typically starts with a name (may have a year or dash separator)
+    if (line.length > 3 && !line.startsWith('•') && !line.startsWith('-')) {
+      const name = line.replace(yearRangePattern, '').replace(/[-–—]\s*$/, '').trim();
+      const descLines: string[] = [];
+      const techs: string[] = [];
+
+      // Collect description lines
+      while (i + 1 < projectLines.length) {
+        const nextLine = projectLines[i + 1];
+        if (nextLine.length > 3 && !nextLine.startsWith('•') && !nextLine.startsWith('-') && !yearRangePattern.test(nextLine)) {
+          break; // likely next project
+        }
+        i++;
+        const cleaned = projectLines[i].replace(/^[•\-*]\s*/, '').trim();
+        // Check for tech stack indicators
+        if (/\b(tech|stack|built with|using|technologies?)\b/i.test(cleaned)) {
+          const techStr = cleaned.replace(/.*?:\s*/, '');
+          techs.push(...techStr.split(/[,|]/).map(t => t.trim()).filter(Boolean));
+        } else if (cleaned.length > 3) {
+          descLines.push(cleaned);
+        }
+      }
+
+      if (name.length > 2) {
+        projects.push({
+          name,
+          description: descLines.join(' ').slice(0, 200),
+          technologies: techs,
+          outcome: undefined,
+        });
+      }
+    }
+    i++;
+  }
+
+  console.log(`[Local Profile Fallback] Extracted: ${education.length} education, ${experience.length} experience, ${certifications.length} certifications, ${projects.length} projects`);
+
+  return {
+    experience,
+    projects,
+    certifications,
+    achievements,
+    education,
+  };
 }
 
 
