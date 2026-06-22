@@ -1,0 +1,385 @@
+@import "tailwindcss";
+
+/* ============================================================================
+   Design System: Pastel Glass Morphism & Soft Gradient Aesthetic
+   Dark/Light theme tokens via CSS custom properties
+   ============================================================================ */
+
+/* ============================================================================
+   Tailwind v4 Theme Configuration
+   ============================================================================ */
+@theme {
+  --font-family-sans: "Inter", "SF Pro Display", "Helvetica Neue", sans-serif;
+
+  /* Design system colors */
+  --color-lavender: #E8DEFF;
+  --color-periwinkle: #C9B8F7;
+  --color-baby-blue: #C4E4F9;
+  --color-ice-blue: #DFF1FB;
+  --color-blush-pink: #F8D0E0;
+  --color-soft-peach: #FDDDE6;
+  --color-light-gray: #F7F8FA;
+  --color-charcoal: #1A1A2E;
+  --color-medium-gray: #6B7280;
+  --color-accent-teal: #5BC0BE;
+  --color-deep-teal: #3A8F8F;
+
+  /* Dark mode variants */
+  --color-dark-surface: #0F0F1A;
+  --color-dark-card: #1A1A2E;
+  --color-dark-card-hover: #252540;
+  --color-dark-border: #2D2D4A;
+  --color-dark-text: #E8E8F0;
+  --color-dark-text-muted: #9CA3AF;
+  --color-dark-lavender: #3D2E6B;
+  --color-dark-baby-blue: #1E3A4F;
+  --color-dark-blush-pink: #4A2035;
+
+  /* Spacing */
+  --radius-glass: 20px;
+  --radius-pill: 24px;
+  --radius-card: 16px;
+
+  /* Shadows */
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --shadow-glass-hover: 0 12px 40px rgba(0, 0, 0, 0.12);
+  --shadow-elevated: 0 20px 60px rgba(0, 0, 0, 0.1);
+  --shadow-dark-glass: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --shadow-dark-elevated: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================================================
+   Light Theme (default)
+   ============================================================================ */
+:root {
+  /* Backgrounds */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F7F8FA;
+  --bg-gradient-start: #DFF1FB;
+  --bg-gradient-mid: #E8DEFF;
+  --bg-gradient-end: #F8D0E0;
+  --bg-card: rgba(255, 255, 255, 0.75);
+  --bg-card-solid: #FFFFFF;
+  --bg-sidebar: rgba(255, 255, 255, 0.6);
+  --bg-input: #FFFFFF;
+
+  /* Text */
+  --text-primary: #1A1A2E;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+  --text-inverse: #FFFFFF;
+
+  /* Borders */
+  --border-default: rgba(255, 255, 255, 0.6);
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-input: #D1D5DB;
+  --border-input-focus: #5BC0BE;
+
+  /* Glass effect */
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+
+  /* Accent */
+  --accent: #5BC0BE;
+  --accent-hover: #3A8F8F;
+  --accent-light: rgba(91, 192, 190, 0.1);
+
+  /* Status colors */
+  --success: #22C55E;
+  --success-bg: #F0FDF4;
+  --success-text: #166534;
+  --warning: #EAB308;
+  --warning-bg: #FEFCE8;
+  --warning-text: #854D0E;
+  --error: #EF4444;
+  --error-bg: #FEF2F2;
+  --error-text: #991B1B;
+  --info: #3B82F6;
+  --info-bg: #EFF6FF;
+  --info-text: #1E40AF;
+
+  /* Decorative orbs */
+  --orb-pink: rgba(248, 208, 224, 0.6);
+  --orb-blue: rgba(196, 228, 249, 0.5);
+  --orb-lavender: rgba(201, 184, 247, 0.5);
+
+  /* Sidebar */
+  --sidebar-bg: rgba(247, 248, 250, 0.8);
+  --sidebar-active: rgba(91, 192, 190, 0.15);
+  --sidebar-active-text: #3A8F8F;
+  --sidebar-hover: rgba(0, 0, 0, 0.04);
+}
+
+/* ============================================================================
+   Dark Theme
+   ============================================================================ */
+.dark {
+  /* Backgrounds */
+  --bg-primary: #0F0F1A;
+  --bg-secondary: #151525;
+  --bg-gradient-start: #0F1A2E;
+  --bg-gradient-mid: #1A1030;
+  --bg-gradient-end: #2A1525;
+  --bg-card: rgba(26, 26, 46, 0.8);
+  --bg-card-solid: #1A1A2E;
+  --bg-sidebar: rgba(26, 26, 46, 0.85);
+  --bg-input: #1A1A2E;
+
+  /* Text */
+  --text-primary: #E8E8F0;
+  --text-secondary: #9CA3AF;
+  --text-muted: #6B7280;
+  --text-inverse: #1A1A2E;
+
+  /* Borders */
+  --border-default: rgba(45, 45, 74, 0.8);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-input: #2D2D4A;
+  --border-input-focus: #5BC0BE;
+
+  /* Glass effect */
+  --glass-bg: rgba(26, 26, 46, 0.8);
+  --glass-border: rgba(45, 45, 74, 0.6);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+  /* Accent */
+  --accent: #5BC0BE;
+  --accent-hover: #7DD3D1;
+  --accent-light: rgba(91, 192, 190, 0.15);
+
+  /* Status colors */
+  --success: #4ADE80;
+  --success-bg: rgba(34, 197, 94, 0.1);
+  --success-text: #86EFAC;
+  --warning: #FACC15;
+  --warning-bg: rgba(234, 179, 8, 0.1);
+  --warning-text: #FDE047;
+  --error: #F87171;
+  --error-bg: rgba(239, 68, 68, 0.1);
+  --error-text: #FCA5A5;
+  --info: #60A5FA;
+  --info-bg: rgba(59, 130, 246, 0.1);
+  --info-text: #93C5FD;
+
+  /* Decorative orbs */
+  --orb-pink: rgba(74, 32, 53, 0.6);
+  --orb-blue: rgba(30, 58, 79, 0.5);
+  --orb-lavender: rgba(61, 46, 107, 0.5);
+
+  /* Sidebar */
+  --sidebar-bg: rgba(21, 21, 37, 0.9);
+  --sidebar-active: rgba(91, 192, 190, 0.15);
+  --sidebar-active-text: #7DD3D1;
+  --sidebar-hover: rgba(255, 255, 255, 0.04);
+}
+
+/* ============================================================================
+   Base Styles
+   ============================================================================ */
+html {
+  font-family: "Inter", "SF Pro Display", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ============================================================================
+   Utility Classes
+   ============================================================================ */
+
+/* Glass morphism card — defined below with transitions */
+
+.glass-card-hover:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.dark .glass-card-hover:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Hero gradient background */
+.bg-hero-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--bg-gradient-start) 0%,
+    var(--bg-gradient-mid) 40%,
+    var(--bg-gradient-end) 100%
+  );
+}
+
+/* Card shine overlay */
+.card-shine {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.8),
+    rgba(255, 255, 255, 0.4)
+  );
+}
+
+.dark .card-shine {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.02)
+  );
+}
+
+/* Sidebar styling */
+.sidebar-glass {
+  background: var(--sidebar-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border-subtle);
+}
+
+/* Input styling */
+.input-glass {
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: 12px;
+  color: var(--text-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-glass:focus {
+  border-color: var(--border-input-focus);
+  box-shadow: 0 0 0 3px var(--accent-light);
+  outline: none;
+}
+
+.input-glass::placeholder {
+  color: var(--text-muted);
+}
+
+/* Badge/pill styling */
+.badge-pill {
+  border-radius: var(--radius-pill);
+  font-weight: 500;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+}
+
+/* Button primary */
+.btn-primary {
+  background: var(--accent);
+  color: var(--text-inverse);
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  padding: 0.75rem 1.75rem;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  box-shadow: 0 4px 14px rgba(91, 192, 190, 0.3);
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 6px 20px rgba(91, 192, 190, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Button secondary */
+.btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  padding: 0.75rem 1.75rem;
+  backdrop-filter: blur(8px);
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.btn-secondary:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Fun shimmer on primary buttons */
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.btn-primary:hover::after {
+  left: 100%;
+}
+
+/* Smooth page transitions */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-glass);
+  box-shadow: var(--glass-shadow);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+/* Focus Styles (Accessibility) */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background: rgba(91, 192, 190, 0.3);
+  color: var(--text-primary);
+}

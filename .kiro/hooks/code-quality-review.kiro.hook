@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Code Quality Review",
+  "description": "Reviews written code for clean code principles, proper error handling, and consistency with project patterns",
+  "version": "1",
+  "when": {
+    "type": "postToolUse",
+    "toolTypes": [
+      "write"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Review the code just written for: 1) Proper error handling 2) No unused imports or variables 3) Consistent naming conventions 4) Appropriate TypeScript types (no 'any') 5) Accessibility attributes on UI components. Fix any issues found."
+  }
+}
