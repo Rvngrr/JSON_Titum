@@ -32,7 +32,8 @@ export async function fetchJobs(query: string, location: string): Promise<JSearc
   const params = new URLSearchParams({
     query: `${query} in ${location}`,
     page: '1',
-    num_pages: '3',
+    num_pages: '1',
+    country: 'ph',
   });
 
   const url = `${JSEARCH_API_BASE_URL}?${params.toString()}`;

@@ -126,42 +126,6 @@ export default function JobListings() {
         });
 
         setJobs(jobsWithMatch);
-
-        // Trigger match calculation in background for any jobs that haven't been calculated yet
-        const uncalculatedJobs = jobsWithMatch.filter((j) => j.matchPercentage === null);
-        if (uncalculatedJobs.length > 0) {
-          // Calculate matches for this applicant against all jobs
-          fetch("/api/match/calculate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ applicant_id: user.id }),
-          })
-            .then((res) => res.json())
-            .then((data) => {
-              if (data.success && data.results?.length > 0) {
-                // Update the jobs with the new match results
-                setJobs((prevJobs) => {
-                  const newMatchMap = new Map<string, number>();
-                  for (const result of data.results) {
-                    newMatchMap.set(result.job_description_id, result.match_percentage);
-                  }
-                  const updated = prevJobs.map((job) => ({
-                    ...job,
-                    matchPercentage: newMatchMap.get(job.id) ?? job.matchPercentage,
-                  }));
-                  updated.sort((a, b) => {
-                    const aMatch = a.matchPercentage ?? -1;
-                    const bMatch = b.matchPercentage ?? -1;
-                    return bMatch - aMatch;
-                  });
-                  return updated;
-                });
-              }
-            })
-            .catch(() => {
-              // Non-blocking — match calculation failure doesn't break the page
-            });
-        }
       } catch {
         setError("An unexpected error occurred.");
       } finally {
@@ -240,8 +204,8 @@ export default function JobListings() {
   if (error) {
     return (
       <section aria-label="Job listings">
-        <div className="rounded-md bg-red-50 p-4">
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="rounded-xl bg-[var(--error-bg)] p-4">
+          <p className="text-sm text-[var(--error-text)]">{error}</p>
         </div>
       </section>
     );
@@ -250,8 +214,8 @@ export default function JobListings() {
   return (
     <section aria-label="Job listings">
       {/* Search and Filter Controls */}
-      <div className="mb-6 space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900">
+      <div className="mb-6 space-y-4 glass-card p-4">
+        <h2 className="text-sm font-semibold text-[var(--text-primary)]">
           Search &amp; Filter
         </h2>
 
@@ -260,7 +224,7 @@ export default function JobListings() {
           <div>
             <label
               htmlFor="keyword-search"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-[var(--text-primary)]"
             >
               Keyword
             </label>
@@ -270,7 +234,7 @@ export default function JobListings() {
               placeholder="Search title or description..."
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="mt-1 block w-full input-glass px-4 py-2.5 text-sm"
             />
           </div>
 
@@ -278,7 +242,7 @@ export default function JobListings() {
           <div>
             <label
               htmlFor="skill-filter"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-[var(--text-primary)]"
             >
               Skills
             </label>
@@ -288,9 +252,9 @@ export default function JobListings() {
               placeholder="e.g. React, Python"
               value={skillFilter}
               onChange={(e) => setSkillFilter(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="mt-1 block w-full input-glass px-4 py-2.5 text-sm"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-[var(--text-muted)]">
               Comma-separated skills
             </p>
           </div>
@@ -299,7 +263,7 @@ export default function JobListings() {
           <div>
             <label
               htmlFor="min-match"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-[var(--text-primary)]"
             >
               Min Match %
             </label>
@@ -314,7 +278,7 @@ export default function JobListings() {
                   Math.max(0, Math.min(100, Number(e.target.value) || 0))
                 )
               }
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="mt-1 block w-full input-glass px-4 py-2.5 text-sm"
             />
           </div>
 
@@ -322,7 +286,7 @@ export default function JobListings() {
           <div>
             <label
               htmlFor="max-match"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-[var(--text-primary)]"
             >
               Max Match %
             </label>
@@ -337,7 +301,7 @@ export default function JobListings() {
                   Math.max(0, Math.min(100, Number(e.target.value) || 0))
                 )
               }
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="mt-1 block w-full input-glass px-4 py-2.5 text-sm"
             />
           </div>
         </div>
@@ -345,8 +309,8 @@ export default function JobListings() {
 
       {/* Results */}
       {filteredJobs.length === 0 ? (
-        <div className="rounded-md border border-yellow-200 bg-yellow-50 p-6 text-center">
-          <p className="text-sm text-yellow-800">
+        <div className="rounded-xl border border-[var(--warning)] bg-[var(--warning-bg)] p-6 text-center">
+          <p className="text-sm text-[var(--warning-text)]">
             {hasActiveFilters
               ? "No jobs match your criteria. Try broadening your search."
               : "No published job listings are available at this time."}
@@ -354,18 +318,18 @@ export default function JobListings() {
         </div>
       ) : (
         <div className="space-y-4">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[var(--text-muted)]">
             Showing {filteredJobs.length}{" "}
             {filteredJobs.length === 1 ? "job" : "jobs"}
           </p>
 
           {statusFetchFailed && (
             <div
-              className="rounded-md border border-blue-200 bg-blue-50 p-3"
+              className="rounded-xl border border-[var(--accent)] bg-[var(--accent-light)] p-3"
               role="status"
               aria-live="polite"
             >
-              <p className="text-sm text-blue-700">
+              <p className="text-sm text-[var(--accent)]">
                 Application status is temporarily unavailable.
               </p>
             </div>
@@ -375,17 +339,17 @@ export default function JobListings() {
             {filteredJobs.map((job) => (
               <li
                 key={job.id}
-                className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:border-blue-300 hover:shadow-md"
+                className="glass-card p-4 transition hover:shadow-lg"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <Link
                       href={`/applicant/jobs/${job.id}`}
-                      className="text-lg font-medium text-gray-900 hover:text-blue-600 hover:underline"
+                      className="text-lg font-medium text-[var(--text-primary)] hover:text-[var(--accent)] hover:underline"
                     >
                       {job.title}
                     </Link>
-                    <p className="mt-1 line-clamp-2 text-sm text-gray-600">
+                    <p className="mt-1 line-clamp-2 text-sm text-[var(--text-secondary)]">
                       {job.description}
                     </p>
                     {job.requiredSkills.length > 0 && (
@@ -393,7 +357,7 @@ export default function JobListings() {
                         {job.requiredSkills.map((skill) => (
                           <span
                             key={skill}
-                            className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700"
+                            className="inline-flex items-center rounded-full border border-[var(--border-input)] bg-[var(--bg-secondary)] px-2.5 py-0.5 text-xs font-medium text-[var(--text-secondary)]"
                           >
                             {skill}
                           </span>
@@ -407,13 +371,13 @@ export default function JobListings() {
                         percentage={job.matchPercentage}
                       />
                     ) : (
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-[var(--text-muted)]">
                         Not calculated
                       </span>
                     )}
                   </div>
                 </div>
-                <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
+                <div className="mt-3 flex items-center justify-between border-t border-[var(--border-subtle)] pt-3">
                   {!statusFetchFailed && (
                     <ApplicationStatusBadge
                       applied={appliedJobIds.has(job.id)}

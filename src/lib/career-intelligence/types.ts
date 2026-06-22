@@ -29,18 +29,6 @@ export interface ProficiencyBatchResult {
 }
 
 /**
- * Dimension scores for multi-dimensional ATS scoring.
- * Each dimension is an integer in [0, 100].
- */
-export interface DimensionScores {
-  keywordMatch: number;        // 0-100
-  sectionCompleteness: number; // 0-100
-  experienceQuality: number;   // 0-100
-  educationRelevance: number;  // 0-100
-  formatting: number;          // 0-100
-}
-
-/**
  * Full ATS score result including matches, misses, and suggestions.
  */
 export interface ATSScoreResult {
@@ -52,8 +40,6 @@ export interface ATSScoreResult {
   suggestions: ATSSuggestion[];
   /** Whether LLM or local fallback was used */
   analysisSource: 'llm' | 'local';
-  /** Optional multi-dimensional breakdown, omitted if not requested */
-  dimensions?: DimensionScores;
 }
 
 /**

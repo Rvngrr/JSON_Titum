@@ -101,11 +101,8 @@ describe("SkillProfile", () => {
     });
 
     expect(screen.getByText("TypeScript")).toBeInTheDocument();
-    // Source indicators are now shown via proficiency-colored chips and title tooltips
-    const reactItem = screen.getByTitle(/Advanced/);
-    const tsItem = screen.getByTitle(/Intermediate/);
-    expect(reactItem).toBeInTheDocument();
-    expect(tsItem).toBeInTheDocument();
+    expect(screen.getByText("Parsed from resume")).toBeInTheDocument();
+    expect(screen.getByText("Manually added")).toBeInTheDocument();
   });
 
   it("displays proficiency levels as badges", async () => {
@@ -115,12 +112,12 @@ describe("SkillProfile", () => {
       expect(screen.getByText("React")).toBeInTheDocument();
     });
 
-    // Proficiency levels are indicated via title attributes and color-coded chips
+    // Proficiency badges are rendered as span elements within the skills list
     const skillsList = screen.getByLabelText("Skills list");
-    const items = skillsList.querySelectorAll("[role='listitem']");
-    const titles = Array.from(items).map((el) => el.getAttribute("title"));
-    expect(titles.some((t) => t?.includes("Advanced"))).toBe(true);
-    expect(titles.some((t) => t?.includes("Intermediate"))).toBe(true);
+    const advancedBadges = skillsList.querySelectorAll("span");
+    const badgeTexts = Array.from(advancedBadges).map((el) => el.textContent);
+    expect(badgeTexts).toContain("Advanced");
+    expect(badgeTexts).toContain("Intermediate");
   });
 
   it("shows skill count in header", async () => {

@@ -54,18 +54,15 @@ export interface SkillMatchDetail {
 /**
  * Calculates a weighted match score from skill match details.
  * Required skills have 2x weight, preferred skills have 1x weight.
- * Proficiency levels provide bonus scoring for matched skills.
  * Returns a normalized integer score from 0-100.
  *
  * This function is pure and deterministic - no AI calls needed.
  *
  * @param matchDetails - Array of skill match details with importance levels
- * @param applicantSkills - Optional array of applicant skills with proficiency info for bonus scoring
  * @returns Object with matchPercentage (0-100), matchedSkills, and missingSkills
  */
 export function calculateWeightedScore(
-  matchDetails: SkillMatchDetail[],
-  applicantSkills?: Skill[]
+  matchDetails: SkillMatchDetail[]
 ): MatchEngineResult {
   if (matchDetails.length === 0) {
     return {
@@ -74,22 +71,6 @@ export function calculateWeightedScore(
       missingSkills: [],
     };
   }
-
-  // Build a proficiency lookup if applicant skills are provided
-  const proficiencyMap = new Map<string, string>();
-  if (applicantSkills) {
-    for (const skill of applicantSkills) {
-      proficiencyMap.set(skill.name.toLowerCase(), skill.proficiency_level);
-    }
-  }
-
-  // Proficiency multiplier: higher proficiency gives a bonus to the weight earned
-  const proficiencyMultiplier: Record<string, number> = {
-    beginner: 0.6,
-    intermediate: 0.8,
-    advanced: 1.0,
-    expert: 1.0,
-  };
 
   let totalWeight = 0;
   let matchedWeight = 0;
@@ -101,21 +82,15 @@ export function calculateWeightedScore(
     totalWeight += weight;
 
     if (detail.isMatch) {
-      // Apply proficiency multiplier if we have proficiency data
-      let effectiveWeight = weight;
-      if (detail.applicantSkill && proficiencyMap.size > 0) {
-        const proficiency = proficiencyMap.get(detail.applicantSkill.toLowerCase());
-        const multiplier = proficiency ? (proficiencyMultiplier[proficiency] ?? 1.0) : 1.0;
-        effectiveWeight = weight * multiplier;
-      }
-      matchedWeight += effectiveWeight;
+      matchedWeight += weight;
       matchedSkills.push(detail.jobSkill);
     } else {
       missingSkills.push(detail.jobSkill);
     }
   }
 
-  // Avoid division by zero
+  // Avoid division by zero (shouldn't happen if matchDetails.length > 0,
+  // but guard defensively)
   if (totalWeight === 0) {
     return {
       matchPercentage: 0,
@@ -202,6 +177,6 @@ export async function calculateMatch(
     jobRequiredSkills
   );
 
-  // Calculate weighted score using the pure scoring function (with proficiency data)
-  return calculateWeightedScore(matchDetails, applicantSkills);
+  // Calculate weighted score using the pure scoring function
+  return calculateWeightedScore(matchDetails);
 }

@@ -64,14 +64,14 @@ export default function WorkPreferencesForm({
   return (
     <div className="space-y-5">
       {error && (
-        <div className="rounded-md bg-red-50 p-3 text-sm text-red-700" role="alert">
+        <div className="rounded-xl bg-[var(--error-bg)] p-3 text-sm text-[var(--error-text)]" role="alert">
           {error}
         </div>
       )}
 
       {/* Work Mode */}
       <fieldset>
-        <legend className="mb-2 text-xs font-medium text-gray-600">
+        <legend className="mb-2 text-xs font-medium text-[var(--text-secondary)]">
           Preferred Work Arrangement
         </legend>
         <div className="flex flex-wrap gap-3">
@@ -80,8 +80,8 @@ export default function WorkPreferencesForm({
               key={mode.value}
               className={`flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-2.5 text-sm transition-colors ${
                 workMode === mode.value
-                  ? "border-blue-500 bg-blue-50 text-blue-700"
-                  : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                  ? "border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)]"
+                  : "border-[var(--border-input)] bg-[var(--bg-input)] text-[var(--text-primary)] hover:border-[var(--text-muted)]"
               } ${disabled ? "pointer-events-none opacity-50" : ""}`}
             >
               <input
@@ -106,16 +106,16 @@ export default function WorkPreferencesForm({
             type="checkbox"
             checked={willingToRelocate}
             onChange={(e) => setWillingToRelocate(e.target.checked)}
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="h-4 w-4 rounded border-[var(--border-input)] text-[var(--accent)] focus:ring-[var(--accent)] accent-[var(--accent)]"
             disabled={disabled}
           />
-          <span className="text-sm text-gray-700">Willing to relocate</span>
+          <span className="text-sm text-[var(--text-primary)]">Willing to relocate</span>
         </label>
       </div>
 
       {/* Target Industries */}
       <div>
-        <label className="mb-2 block text-xs font-medium text-gray-600">
+        <label className="mb-2 block text-xs font-medium text-[var(--text-secondary)]">
           Target Industries
         </label>
         {targetIndustries.length > 0 && (
@@ -123,14 +123,14 @@ export default function WorkPreferencesForm({
             {targetIndustries.map((industry) => (
               <span
                 key={industry}
-                className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700"
+                className="inline-flex items-center gap-1 rounded-full bg-[var(--bg-secondary)] px-3 py-1 text-xs font-medium text-[var(--text-primary)]"
               >
                 {industry}
                 <button
                   type="button"
                   onClick={() => handleRemoveIndustry(industry)}
                   disabled={disabled}
-                  className="ml-0.5 rounded-full p-0.5 hover:bg-gray-200"
+                  className="ml-0.5 rounded-full p-0.5 hover:bg-[var(--sidebar-hover)]"
                   aria-label={`Remove ${industry}`}
                 >
                   <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -153,14 +153,14 @@ export default function WorkPreferencesForm({
               }
             }}
             placeholder="e.g., Technology, Healthcare, Finance"
-            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="input-glass flex-1 px-3 py-2 text-sm"
             disabled={disabled}
           />
           <button
             type="button"
             onClick={handleAddIndustry}
             disabled={disabled || !newIndustry.trim()}
-            className="rounded-md border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="rounded-xl border border-[var(--border-input)] px-3 py-2 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--sidebar-hover)] disabled:opacity-50"
           >
             Add
           </button>
@@ -171,7 +171,7 @@ export default function WorkPreferencesForm({
         type="button"
         onClick={handleSave}
         disabled={disabled || saving}
-        className="rounded-md bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        className="btn-primary text-xs !py-2 !px-4 disabled:opacity-50"
       >
         {saving ? "Saving..." : "Save Preferences"}
       </button>

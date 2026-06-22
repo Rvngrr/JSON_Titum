@@ -1,7 +1,7 @@
 /**
  * Supported LLM providers.
  */
-export type LLMProvider = 'openai' | 'gemini' | 'llm7' | 'groq';
+export type LLMProvider = 'openai' | 'gemini' | 'llm7';
 
 /**
  * Configuration for the LLM service including fallback behavior.

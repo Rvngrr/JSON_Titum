@@ -7,7 +7,7 @@ export default function MatchPercentageBadge({
 }: MatchPercentageBadgeProps) {
   return (
     <span
-      className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-sm font-medium text-blue-800"
+      className="inline-flex items-center rounded-full border border-[var(--accent)] bg-[var(--accent-light)] px-2.5 py-0.5 text-sm font-medium text-[var(--accent)]"
       aria-label={`Match percentage: ${percentage}%`}
     >
       {percentage}%

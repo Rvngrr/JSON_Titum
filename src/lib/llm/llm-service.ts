@@ -7,7 +7,6 @@
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createClient } from '@supabase/supabase-js';
-import { callGroq } from './groq-provider';
 import type { LLMConfig, LLMError, LLMProvider, LLMRequest, LLMResponse } from './types';
 import { LLMUnavailableError } from './types';
 
@@ -368,8 +367,6 @@ function getProviderAdapter(provider: LLMProvider): (request: LLMRequest) => Pro
       return callGemini;
     case 'llm7':
       return callLLM7;
-    case 'groq':
-      return callGroq;
   }
 }
 

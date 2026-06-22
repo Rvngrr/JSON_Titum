@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import type { MatchResult, Skill } from "@/types";
 
@@ -34,9 +35,9 @@ interface SkillROIItem {
 // ============================================================================
 
 function getScoreLabel(score: number): { text: string; color: string } {
-  if (score >= 80) return { text: "Optimal", color: "text-emerald-600" };
-  if (score >= 60) return { text: "Good", color: "text-yellow-600" };
-  return { text: "Needs Work", color: "text-red-500" };
+  if (score >= 80) return { text: "Optimal", color: "text-[var(--success)]" };
+  if (score >= 60) return { text: "Good", color: "text-[var(--warning)]" };
+  return { text: "Needs Work", color: "text-[var(--error)]" };
 }
 
 function getProficiencyPercent(level: string): number {
@@ -64,25 +65,38 @@ function formatDate(): string {
 }
 
 // ============================================================================
+// Animation Variants
+// ============================================================================
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+
+// ============================================================================
 // Sub-Components
 // ============================================================================
 
 function SkeletonCard({ className = "" }: { className?: string }) {
   return (
-    <div
-      className={`animate-pulse rounded-2xl border border-gray-100 bg-white/60 p-6 shadow-lg backdrop-blur-sm ${className}`}
-    >
-      <div className="mb-4 h-4 w-1/3 rounded bg-gray-200" />
-      <div className="mb-2 h-8 w-1/2 rounded bg-gray-200" />
-      <div className="h-4 w-2/3 rounded bg-gray-200" />
+    <div className={`animate-pulse glass-card p-6 ${className}`}>
+      <div className="mb-4 h-4 w-1/3 rounded-lg bg-[var(--border-subtle)]" />
+      <div className="mb-2 h-8 w-1/2 rounded-lg bg-[var(--border-subtle)]" />
+      <div className="h-4 w-2/3 rounded-lg bg-[var(--border-subtle)]" />
     </div>
   );
 }
 
 function ATSGauge({ score }: { score: number }) {
-  // SVG semi-circle gauge from red → yellow → green
   const radius = 70;
-  const strokeWidth = 14;
   const circumference = Math.PI * radius;
   const progress = (score / 100) * circumference;
 
@@ -97,32 +111,41 @@ function ATSGauge({ score }: { score: number }) {
       >
         <defs>
           <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#ef4444" />
-            <stop offset="50%" stopColor="#eab308" />
-            <stop offset="100%" stopColor="#22c55e" />
+            <stop offset="0%" stopColor="var(--error)" />
+            <stop offset="50%" stopColor="var(--warning)" />
+            <stop offset="100%" stopColor="var(--success)" />
           </linearGradient>
         </defs>
         {/* Background arc */}
         <path
           d="M 10 90 A 70 70 0 0 1 170 90"
           fill="none"
-          stroke="#e5e7eb"
-          strokeWidth={strokeWidth}
+          stroke="var(--border-subtle)"
+          strokeWidth="14"
           strokeLinecap="round"
         />
         {/* Progress arc */}
-        <path
+        <motion.path
           d="M 10 90 A 70 70 0 0 1 170 90"
           fill="none"
           stroke="url(#gaugeGradient)"
-          strokeWidth={strokeWidth}
+          strokeWidth="14"
           strokeLinecap="round"
-          strokeDasharray={`${progress} ${circumference}`}
+          initial={{ strokeDasharray: `0 ${circumference}` }}
+          animate={{ strokeDasharray: `${progress} ${circumference}` }}
+          transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
         />
       </svg>
-      <div className="absolute top-8 flex flex-col items-center">
-        <span className="text-4xl font-bold text-gray-900">{score}</span>
-        <span className="text-sm text-gray-500">/100</span>
+      <div className="absolute top-6 flex flex-col items-center">
+        <motion.span
+          className="text-4xl font-bold text-[var(--text-primary)]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          {score}
+        </motion.span>
+        <span className="text-sm text-[var(--text-muted)]">/100</span>
       </div>
     </div>
   );
@@ -152,7 +175,6 @@ export default function ApplicantDashboardPage() {
           return;
         }
 
-        // Fetch skill profile
         const { data: profile } = await supabase
           .from("skill_profiles")
           .select("id")
@@ -165,7 +187,6 @@ export default function ApplicantDashboardPage() {
           return;
         }
 
-        // Fetch skills, match results in parallel
         const [skillsResult, matchResult] = await Promise.all([
           supabase
             .from("skills")
@@ -188,7 +209,6 @@ export default function ApplicantDashboardPage() {
           return;
         }
 
-        // Calculate ATS score (average match percentage)
         const atsScore =
           matchResults.length > 0
             ? Math.round(
@@ -197,7 +217,6 @@ export default function ApplicantDashboardPage() {
               )
             : 0;
 
-        // Calculate Hidden Gems (most frequent missing skills)
         const missingSkillsCount: Record<string, number> = {};
         matchResults.forEach((m) => {
           (m.missing_skills ?? []).forEach((skill) => {
@@ -214,13 +233,11 @@ export default function ApplicantDashboardPage() {
             totalJobs: matchResults.length,
           }));
 
-        // Calculate Skill ROI (projected improvement per missing skill)
         const skillROI: SkillROIItem[] = Object.entries(missingSkillsCount)
           .sort(([, a], [, b]) => b - a)
           .slice(0, 3)
           .map(([name, frequency]) => ({
             name,
-            // Projected improvement: proportional to how many jobs need it
             projectedImprovement: Math.round(
               (frequency / matchResults.length) * 25
             ),
@@ -253,16 +270,18 @@ export default function ApplicantDashboardPage() {
   // Loading State
   if (loading) {
     return (
-      <main className="flex-1 p-6 md:p-8">
+      <main className="flex-1 p-6 md:p-10">
+        <div className="mx-auto max-w-5xl">
         <div className="mb-6">
-          <div className="h-6 w-64 animate-pulse rounded bg-gray-200" />
-          <div className="mt-2 h-4 w-40 animate-pulse rounded bg-gray-200" />
+          <div className="h-6 w-64 animate-pulse rounded-lg bg-[var(--border-subtle)]" />
+          <div className="mt-2 h-4 w-40 animate-pulse rounded-lg bg-[var(--border-subtle)]" />
         </div>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <SkeletonCard className="lg:row-span-1" />
-          <SkeletonCard className="lg:row-span-1" />
+        <div className="grid gap-5 md:grid-cols-2">
           <SkeletonCard />
           <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
         </div>
       </main>
     );
@@ -271,34 +290,27 @@ export default function ApplicantDashboardPage() {
   // Error State
   if (error) {
     return (
-      <main className="flex-1 p-6 md:p-8">
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-            <svg
-              className="h-8 w-8 text-red-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
-              />
+      <main className="flex-1 p-6 md:p-10">
+        <div className="mx-auto max-w-5xl">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center justify-center py-20"
+        >
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--error-bg)]">
+            <svg className="h-8 w-8 text-[var(--error)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h2 className="text-lg font-semibold text-gray-900">
-            Something went wrong
-          </h2>
-          <p className="mt-1 text-sm text-gray-600">{error}</p>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Something went wrong</h2>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+            className="btn-primary mt-4 text-sm"
           >
             Try Again
           </button>
+        </motion.div>
         </div>
       </main>
     );
@@ -307,37 +319,26 @@ export default function ApplicantDashboardPage() {
   // No Data State
   if (!hasProfile || !data) {
     return (
-      <main className="flex-1 p-6 md:p-8">
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
-            <svg
-              className="h-8 w-8 text-blue-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
+      <main className="flex-1 p-6 md:p-10">
+        <div className="mx-auto max-w-5xl">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center justify-center py-20"
+        >
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--accent-light)]">
+            <svg className="h-8 w-8 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <h2 className="text-lg font-semibold text-gray-900">
-            No Resume Data Yet
-          </h2>
-          <p className="mt-1 max-w-sm text-center text-sm text-gray-600">
-            Upload your resume and let our AI analyze your skills against job
-            listings. Get personalized insights and recommendations.
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">No Resume Data Yet</h2>
+          <p className="mt-1 max-w-sm text-center text-sm text-[var(--text-secondary)]">
+            Upload your resume and let our AI analyze your skills against job listings. Get personalized insights and recommendations.
           </p>
-          <Link
-            href="/applicant/profile"
-            className="mt-6 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white shadow-md hover:bg-blue-700 transition-colors"
-          >
+          <Link href="/applicant/profile" className="btn-primary mt-6 text-sm">
             Upload Resume
           </Link>
+        </motion.div>
         </div>
       </main>
     );
@@ -345,202 +346,184 @@ export default function ApplicantDashboardPage() {
 
   // Main Dashboard
   return (
-    <main className="flex-1 bg-gradient-to-br from-slate-50 via-white to-blue-50/30 p-6 md:p-8">
+    <main className="flex-1 p-6 md:p-10">
+      <div className="mx-auto max-w-5xl space-y-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-xl font-bold uppercase tracking-wide text-gray-900">
+      <motion.header
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <h1 className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)]">
           Resume Analysis Results
         </h1>
-        <p className="mt-1 text-sm text-gray-500">{formatDate()}</p>
-      </div>
+        <p className="mt-1 text-sm text-[var(--text-secondary)]">{formatDate()}</p>
+      </motion.header>
 
       {/* Dashboard Grid */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="grid gap-5 md:grid-cols-2"
+      >
         {/* ATS Score Card */}
-        <div className="rounded-2xl border border-white/60 bg-white/80 p-6 shadow-lg backdrop-blur-sm transition-shadow hover:shadow-xl">
-          <div className="flex flex-col items-center text-center">
+        <motion.div variants={itemVariants} className="glass-card p-6 flex flex-col">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)] mb-4 flex items-center gap-2">
+            <svg className="h-4 w-4 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Resume ATS Score
+          </h2>
+          <div className="flex-1 flex flex-col items-center justify-center text-center">
             <ATSGauge score={data.atsScore} />
-            <h2 className="mt-4 text-sm font-semibold uppercase tracking-wider text-gray-600">
-              Resume ATS Score
-            </h2>
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="mt-2 text-xs text-[var(--text-muted)]">
               Based on {data.totalJobs} targeted job description
               {data.totalJobs !== 1 ? "s" : ""}
             </p>
-            <span
-              className={`mt-3 inline-block rounded-full px-3 py-1 text-xs font-semibold ${scoreLabel.color} bg-opacity-10 ${
-                data.atsScore >= 80
-                  ? "bg-emerald-100"
-                  : data.atsScore >= 60
-                  ? "bg-yellow-100"
-                  : "bg-red-100"
-              }`}
-            >
+            <span className={`mt-3 badge-pill ${
+              data.atsScore >= 80
+                ? "bg-[var(--success-bg)] text-[var(--success-text)]"
+                : data.atsScore >= 60
+                ? "bg-[var(--warning-bg)] text-[var(--warning-text)]"
+                : "bg-[var(--error-bg)] text-[var(--error-text)]"
+            }`}>
               {scoreLabel.text}
             </span>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Hidden Gems Card */}
-        <div className="rounded-2xl border border-white/60 bg-white/80 p-6 shadow-lg backdrop-blur-sm transition-shadow hover:shadow-xl">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-600">
-            Hidden Gems{" "}
-            <span className="font-normal text-gray-400">(Missing Skills)</span>
-          </h2>
-          {data.hiddenGems.length > 0 ? (
-            <ul className="space-y-4">
-              {data.hiddenGems.map((gem) => (
-                <li key={gem.name} className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100">
-                    <svg
-                      className="h-4 w-4 text-amber-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {gem.name}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Highly required by{" "}
-                      {Math.round((gem.frequency / gem.totalJobs) * 100)}% of
-                      target jobs
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-gray-400">
-              No missing skills detected — great job!
-            </p>
-          )}
-        </div>
-
-        {/* Proficiency Levels Card */}
-        <div className="rounded-2xl border border-white/60 bg-white/80 p-6 shadow-lg backdrop-blur-sm transition-shadow hover:shadow-xl">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-600">
-            Proficiency Levels
+        {/* Skills Overview Card */}
+        <motion.div variants={itemVariants} className="glass-card p-6 flex flex-col justify-center">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)] mb-4 flex items-center gap-2">
+            <svg className="h-4 w-4 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Your Skills
           </h2>
           {data.skills.length > 0 ? (
-            <ul className="space-y-4">
-              {data.skills.slice(0, 3).map((skill) => {
+            <div className="space-y-3">
+              {data.skills.slice(0, 5).map((skill) => {
                 const percent = getProficiencyPercent(skill.proficiency_level);
                 return (
-                  <li key={skill.id}>
-                    <div className="mb-1 flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-800">
+                  <div key={skill.id} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-[var(--text-primary)]">
                         {skill.name}
                       </span>
-                      <span className="text-xs capitalize text-gray-500">
-                        {skill.proficiency_level} · {percent}%
+                      <span className="text-xs text-[var(--text-muted)] capitalize">
+                        {skill.proficiency_level}
                       </span>
                     </div>
-                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-100">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500"
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="text-sm text-gray-400">
-              No skills on your profile yet.
-            </p>
-          )}
-        </div>
-
-        {/* Skill ROI Card */}
-        <div className="rounded-2xl border border-white/60 bg-white/80 p-6 shadow-lg backdrop-blur-sm transition-shadow hover:shadow-xl">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-600">
-            Skill ROI
-          </h2>
-          {data.skillROI.length > 0 ? (
-            <ul className="space-y-4">
-              {data.skillROI.map((item) => (
-                <li key={item.name} className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-800">
-                      {item.name}
-                    </p>
-                    <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-500"
-                        style={{
-                          width: `${Math.min(item.projectedImprovement * 4, 100)}%`,
-                        }}
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--border-subtle)]">
+                      <motion.div
+                        className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-periwinkle"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${percent}%` }}
+                        transition={{ duration: 0.8, delay: 0.3 }}
                       />
                     </div>
                   </div>
-                  <span className="shrink-0 rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
-                    +{item.projectedImprovement}% match
-                  </span>
-                </li>
-              ))}
-            </ul>
+                );
+              })}
+              {data.skills.length > 5 && (
+                <Link
+                  href="/applicant/profile"
+                  className="mt-2 inline-block text-xs font-medium text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors"
+                >
+                  View all {data.skills.length} skills →
+                </Link>
+              )}
+            </div>
           ) : (
-            <p className="text-sm text-gray-400">
-              Match against jobs to see skill ROI.
+            <p className="text-sm text-[var(--text-muted)]">No skills found yet.</p>
+          )}
+        </motion.div>
+
+        {/* Hidden Gems Card */}
+        <motion.div variants={itemVariants} className="glass-card p-6 flex flex-col justify-center">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)] mb-4 flex items-center gap-2">
+            <svg className="h-4 w-4 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            </svg>
+            Hidden Gems — Skills to Learn
+          </h2>
+          {data.hiddenGems.length > 0 ? (
+            <div className="space-y-3">
+              {data.hiddenGems.map((gem) => (
+                <div
+                  key={gem.name}
+                  className="flex items-center justify-between rounded-xl bg-[var(--bg-secondary)] px-4 py-3 border border-[var(--border-subtle)]"
+                >
+                  <span className="text-sm font-medium text-[var(--text-primary)]">
+                    {gem.name}
+                  </span>
+                  <span className="badge-pill bg-[var(--accent-light)] text-[var(--accent)]">
+                    {gem.frequency}/{gem.totalJobs} jobs
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-[var(--text-muted)]">
+              No skill gap data available yet. Apply to more jobs to see insights.
             </p>
           )}
-        </div>
-      </div>
+        </motion.div>
 
-      {/* Action Buttons */}
-      <div className="mt-8 flex flex-wrap gap-4">
-        <Link
-          href="/applicant/profile"
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-md transition-all hover:bg-blue-700 hover:shadow-lg"
-        >
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-            />
-          </svg>
-          Update Resume
-        </Link>
-        <Link
-          href="/applicant/jobs"
-          className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 shadow-md transition-all hover:bg-gray-50 hover:shadow-lg"
-        >
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-            />
-          </svg>
-          Explore Job Listings
-        </Link>
+        {/* Skill ROI Card */}
+        <motion.div variants={itemVariants} className="glass-card p-6 flex flex-col justify-center">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)] mb-4 flex items-center gap-2">
+            <svg className="h-4 w-4 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+            Skill ROI — Projected Impact
+          </h2>
+          {data.skillROI.length > 0 ? (
+            <div className="space-y-3">
+              {data.skillROI.map((item) => (
+                <div
+                  key={item.name}
+                  className="flex items-center justify-between rounded-xl bg-[var(--bg-secondary)] px-4 py-3 border border-[var(--border-subtle)]"
+                >
+                  <span className="text-sm font-medium text-[var(--text-primary)]">
+                    {item.name}
+                  </span>
+                  <span className="badge-pill bg-[var(--success-bg)] text-[var(--success-text)]">
+                    +{item.projectedImprovement}% match
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-[var(--text-muted)]">
+              Apply to more jobs to see projected skill impact.
+            </p>
+          )}
+        </motion.div>
+
+        {/* Quick Actions */}
+        <motion.div variants={itemVariants} className="glass-card p-6 md:col-span-2 flex flex-col">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)] mb-4 flex items-center gap-2">
+            <svg className="h-4 w-4 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+            </svg>
+            Quick Actions
+          </h2>
+          <div className="flex-1 flex items-center">
+            <div className="flex flex-wrap gap-3">
+              <Link href="/applicant/jobs" className="btn-primary text-xs">
+                Browse Jobs
+              </Link>
+              <Link href="/applicant/profile" className="btn-secondary text-xs">
+                Update Profile
+              </Link>
+              <Link href="/applicant/career-goals" className="btn-secondary text-xs">
+                Set Career Goals
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
       </div>
     </main>
   );

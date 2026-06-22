@@ -3,7 +3,6 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { useToast } from "@/components/shared/Toast";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -11,7 +10,6 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { addToast } = useToast();
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -21,32 +19,22 @@ export default function LoginForm() {
     try {
       const supabase = createClient();
       const { data, error: authError } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        await supabase.auth.signInWithPassword({ email, password });
 
       if (authError) {
-        // Generic error message — do NOT reveal which field is incorrect (Requirement 2.2)
         setError("Invalid email or password. Please try again.");
-        addToast("error", "Login failed. Please check your credentials.");
         setIsLoading(false);
         return;
       }
 
-      // Get role from user_metadata and redirect to role-appropriate dashboard
       const role = data.user?.user_metadata?.role;
-      addToast("success", "Signed in successfully. Redirecting...");
-
       if (role === "hr_user") {
         router.push("/hr");
       } else {
-        // Default to applicant dashboard
         router.push("/applicant");
       }
     } catch {
       setError("An unexpected error occurred. Please try again.");
-      addToast("error", "An unexpected error occurred. Please try again.");
       setIsLoading(false);
     }
   }
@@ -54,13 +42,13 @@ export default function LoginForm() {
   return (
     <form onSubmit={handleSubmit} aria-label="Login form" noValidate>
       {error && (
-        <div role="alert" aria-live="assertive" className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
+        <div role="alert" aria-live="assertive" className="mb-4 rounded-xl bg-[var(--error-bg)] p-3 text-sm text-[var(--error-text)]">
           {error}
         </div>
       )}
 
       <div className="mb-4">
-        <label htmlFor="login-email" className="mb-1 block text-sm font-medium text-gray-700">
+        <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-[var(--text-primary)]">
           Email
         </label>
         <input
@@ -72,13 +60,13 @@ export default function LoginForm() {
           required
           autoComplete="email"
           aria-required="true"
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="input-glass w-full px-4 py-2.5 text-sm"
           placeholder="you@example.com"
         />
       </div>
 
       <div className="mb-6">
-        <label htmlFor="login-password" className="mb-1 block text-sm font-medium text-gray-700">
+        <label htmlFor="login-password" className="mb-1.5 block text-sm font-medium text-[var(--text-primary)]">
           Password
         </label>
         <input
@@ -90,7 +78,7 @@ export default function LoginForm() {
           required
           autoComplete="current-password"
           aria-required="true"
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="input-glass w-full px-4 py-2.5 text-sm"
         />
       </div>
 
@@ -98,7 +86,7 @@ export default function LoginForm() {
         type="submit"
         disabled={isLoading}
         aria-disabled={isLoading}
-        className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        className="btn-primary w-full text-sm"
       >
         {isLoading ? "Signing in..." : "Sign in"}
       </button>

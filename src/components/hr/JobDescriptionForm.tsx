@@ -238,21 +238,21 @@ export default function JobDescriptionForm({ initialData }: JobDescriptionFormPr
   return (
     <form onSubmit={handleSubmit} aria-label="Job description form" noValidate>
       {error && (
-        <div role="alert" aria-live="assertive" className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
+        <div role="alert" aria-live="assertive" className="mb-4 rounded-xl bg-[var(--error-bg)] p-3 text-sm text-[var(--error-text)]">
           {error}
         </div>
       )}
 
       {success && (
-        <div role="status" aria-live="polite" className="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-700">
+        <div role="status" aria-live="polite" className="mb-4 rounded-xl bg-[var(--success-bg)] p-3 text-sm text-[var(--success-text)]">
           {success}
         </div>
       )}
 
       {/* Title */}
       <div className="mb-4">
-        <label htmlFor="job-title" className="mb-1 block text-sm font-medium text-gray-700">
-          Job Title <span aria-hidden="true">*</span>
+        <label htmlFor="job-title" className="mb-1.5 block text-sm font-medium text-[var(--text-primary)]">
+          Job Title <span aria-hidden="true" className="text-[var(--error)]">*</span>
         </label>
         <input
           id="job-title"
@@ -264,11 +264,11 @@ export default function JobDescriptionForm({ initialData }: JobDescriptionFormPr
           aria-required="true"
           aria-invalid={!!validationErrors.title}
           aria-describedby={validationErrors.title ? "title-error" : undefined}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="input-glass w-full px-4 py-2.5 text-sm"
           placeholder="e.g. Senior Software Engineer"
         />
         {validationErrors.title && (
-          <p id="title-error" className="mt-1 text-sm text-red-600" role="alert">
+          <p id="title-error" className="mt-1 text-xs text-[var(--error-text)]" role="alert">
             {validationErrors.title}
           </p>
         )}
@@ -276,8 +276,8 @@ export default function JobDescriptionForm({ initialData }: JobDescriptionFormPr
 
       {/* Description */}
       <div className="mb-4">
-        <label htmlFor="job-description" className="mb-1 block text-sm font-medium text-gray-700">
-          Description <span aria-hidden="true">*</span>
+        <label htmlFor="job-description" className="mb-1.5 block text-sm font-medium text-[var(--text-primary)]">
+          Description <span aria-hidden="true" className="text-[var(--error)]">*</span>
         </label>
         <textarea
           id="job-description"
@@ -289,11 +289,11 @@ export default function JobDescriptionForm({ initialData }: JobDescriptionFormPr
           aria-invalid={!!validationErrors.description}
           aria-describedby={validationErrors.description ? "description-error" : undefined}
           rows={5}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="input-glass w-full px-4 py-2.5 text-sm"
           placeholder="Describe the role, responsibilities, and expectations..."
         />
         {validationErrors.description && (
-          <p id="description-error" className="mt-1 text-sm text-red-600" role="alert">
+          <p id="description-error" className="mt-1 text-xs text-[var(--error-text)]" role="alert">
             {validationErrors.description}
           </p>
         )}
@@ -301,7 +301,7 @@ export default function JobDescriptionForm({ initialData }: JobDescriptionFormPr
 
       {/* Qualifications */}
       <div className="mb-4">
-        <label htmlFor="job-qualifications" className="mb-1 block text-sm font-medium text-gray-700">
+        <label htmlFor="job-qualifications" className="mb-1.5 block text-sm font-medium text-[var(--text-primary)]">
           Qualifications
         </label>
         <textarea
@@ -310,18 +310,18 @@ export default function JobDescriptionForm({ initialData }: JobDescriptionFormPr
           value={formData.qualifications}
           onChange={(e) => handleFieldChange("qualifications", e.target.value)}
           rows={3}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="input-glass w-full px-4 py-2.5 text-sm"
           placeholder="Optional: education, certifications, years of experience..."
         />
       </div>
 
       {/* Skills */}
       <fieldset className="mb-6">
-        <legend className="mb-2 text-sm font-medium text-gray-700">
-          Skills <span aria-hidden="true">*</span>
+        <legend className="mb-2 text-sm font-medium text-[var(--text-primary)]">
+          Skills <span aria-hidden="true" className="text-[var(--error)]">*</span>
         </legend>
         {validationErrors.skills && (
-          <p className="mb-2 text-sm text-red-600" role="alert" aria-live="assertive">
+          <p className="mb-2 text-xs text-[var(--error-text)]" role="alert" aria-live="assertive">
             {validationErrors.skills}
           </p>
         )}
@@ -338,7 +338,7 @@ export default function JobDescriptionForm({ initialData }: JobDescriptionFormPr
                 value={skill.name}
                 onChange={(e) => handleSkillChange(index, "name", e.target.value)}
                 placeholder="Skill name (e.g. React, Python)"
-                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="input-glass flex-1 px-4 py-2.5 text-sm"
                 aria-label={`Skill ${index + 1} name`}
               />
 
@@ -349,7 +349,7 @@ export default function JobDescriptionForm({ initialData }: JobDescriptionFormPr
                 id={`skill-importance-${index}`}
                 value={skill.importance}
                 onChange={(e) => handleSkillChange(index, "importance", e.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="input-glass rounded-xl px-3 py-2.5 text-sm"
                 aria-label={`Skill ${index + 1} importance`}
               >
                 <option value="required">Required</option>
@@ -361,7 +361,7 @@ export default function JobDescriptionForm({ initialData }: JobDescriptionFormPr
                 onClick={() => removeSkill(index)}
                 disabled={formData.skills.length === 1}
                 aria-label={`Remove skill ${index + 1}`}
-                className="rounded-md border border-gray-300 px-2 py-2 text-sm text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-xl border border-[var(--border-input)] px-2 py-2 text-sm text-[var(--error)] hover:bg-[var(--error-bg)] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Remove
               </button>
@@ -372,7 +372,7 @@ export default function JobDescriptionForm({ initialData }: JobDescriptionFormPr
         <button
           type="button"
           onClick={addSkill}
-          className="mt-3 rounded-md border border-blue-300 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="mt-3 rounded-full border border-[var(--accent)] px-4 py-2 text-sm text-[var(--accent)] hover:bg-[var(--accent-light)] transition-colors"
         >
           + Add Skill
         </button>
@@ -383,7 +383,7 @@ export default function JobDescriptionForm({ initialData }: JobDescriptionFormPr
         type="submit"
         disabled={isSubmitting}
         aria-disabled={isSubmitting}
-        className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        className="btn-primary w-full text-sm"
       >
         {isSubmitting
           ? isEditMode

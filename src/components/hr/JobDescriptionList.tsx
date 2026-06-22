@@ -129,33 +129,33 @@ export default function JobDescriptionList() {
   const getStatusBadgeClasses = (status: JobDescription["status"]) => {
     switch (status) {
       case "published":
-        return "bg-green-100 text-green-800";
+        return "bg-[var(--success-bg)] text-[var(--success-text)]";
       case "draft":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-[var(--warning-bg)] text-[var(--warning-text)]";
       case "closed":
-        return "bg-gray-100 text-gray-800";
+        return "bg-[var(--bg-secondary)] text-[var(--text-muted)]";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-[var(--bg-secondary)] text-[var(--text-muted)]";
     }
   };
 
   const getSourceBadge = (job: ExtendedJobDescription) => {
     if (job.source === "jsearch") {
       return (
-        <span className="inline-flex rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
+        <span className="badge-pill bg-[var(--orb-lavender)] text-[var(--text-primary)]">
           via JSearch
         </span>
       );
     }
     if (job.source === "indeed") {
       return (
-        <span className="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+        <span className="badge-pill bg-[var(--info-bg)] text-[var(--info-text)]">
           via Indeed
         </span>
       );
     }
     return (
-      <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+      <span className="badge-pill bg-[var(--bg-secondary)] text-[var(--text-muted)]">
         Manual
       </span>
     );
@@ -180,7 +180,7 @@ export default function JobDescriptionList() {
   if (error && jobs.length === 0) {
     return (
       <section aria-label="Job descriptions">
-        <div role="alert" className="rounded-md bg-red-50 p-4 text-red-700">
+        <div role="alert" className="rounded-xl bg-[var(--error-bg)] p-4 text-[var(--error-text)]">
           {error}
         </div>
       </section>
@@ -190,12 +190,12 @@ export default function JobDescriptionList() {
   if (jobs.length === 0) {
     return (
       <section aria-label="Job descriptions" className="py-12 text-center">
-        <p className="text-gray-500">
+        <p className="text-[var(--text-muted)]">
           You haven&apos;t created any job descriptions yet.
         </p>
         <Link
           href="/hr/jobs/new"
-          className="mt-4 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="btn-primary mt-4 inline-block text-sm"
         >
           Create your first job posting
         </Link>
@@ -206,57 +206,57 @@ export default function JobDescriptionList() {
   return (
     <section aria-label="Job descriptions">
       {error && (
-        <div role="alert" aria-live="assertive" className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
+        <div role="alert" aria-live="assertive" className="mb-4 rounded-xl bg-[var(--error-bg)] p-3 text-sm text-[var(--error-text)]">
           {error}
         </div>
       )}
 
       {successMessage && (
-        <div role="status" aria-live="polite" className="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-700">
+        <div role="status" aria-live="polite" className="mb-4 rounded-xl bg-[var(--success-bg)] p-3 text-sm text-[var(--success-text)]">
           {successMessage}
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="overflow-x-auto rounded-xl">
+        <table className="min-w-full divide-y divide-[var(--border-subtle)]">
+          <thead className="bg-[var(--bg-secondary)]">
             <tr>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]"
               >
                 Title
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]"
               >
                 Status
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]"
               >
                 Source
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]"
               >
                 Created
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"
+                className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]"
               >
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
+          <tbody className="divide-y divide-[var(--border-subtle)] bg-[var(--bg-card-solid)]">
             {jobs.map((job) => (
-              <tr key={job.id}>
-                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+              <tr key={job.id} className="hover:bg-[var(--sidebar-hover)] transition-colors">
+                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-[var(--text-primary)]">
                   {job.title}
                 </td>
                 <td className="whitespace-nowrap px-6 py-4 text-sm">
@@ -269,7 +269,7 @@ export default function JobDescriptionList() {
                 <td className="whitespace-nowrap px-6 py-4 text-sm">
                   {getSourceBadge(job)}
                 </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-[var(--text-muted)]">
                   {formatDate(job.created_at)}
                 </td>
                 <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
@@ -280,7 +280,7 @@ export default function JobDescriptionList() {
                         type="button"
                         onClick={() => handlePublish(job.id, job.title)}
                         disabled={actionInProgressId === job.id}
-                        className="font-medium text-green-600 hover:text-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
+                        className="font-medium text-[var(--success)] hover:text-[var(--success-text)] transition-colors disabled:opacity-50"
                         aria-label={`Publish ${job.title}`}
                       >
                         {actionInProgressId === job.id ? "Publishing..." : "Publish"}

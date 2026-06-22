@@ -159,16 +159,16 @@ export default function ApplyButton({
                   ? "Apply to this job externally"
                   : "Apply to this job"
         }
-        className={`inline-flex items-center rounded-md px-4 py-2 text-sm font-medium shadow-sm transition-colors ${
+        className={`inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium shadow-sm transition-colors ${
           status === "applied"
-            ? "cursor-not-allowed border border-green-300 bg-green-50 text-green-700"
+            ? "cursor-not-allowed border border-[var(--success)] bg-[var(--success-bg)] text-[var(--success-text)]"
             : status === "applied_externally"
-              ? "cursor-not-allowed border border-purple-300 bg-purple-50 text-purple-700"
+              ? "cursor-not-allowed border border-purple-500/30 bg-purple-500/15 text-purple-400"
               : status === "submitting"
-                ? "cursor-not-allowed border border-gray-300 bg-gray-100 text-gray-500"
+                ? "cursor-not-allowed border border-[var(--border-input)] bg-[var(--bg-secondary)] text-[var(--text-muted)]"
                 : isExternalJob
-                  ? "border border-purple-600 bg-purple-600 text-white hover:bg-purple-700"
-                  : "border border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
+                  ? "border border-purple-500 bg-purple-500 text-white hover:bg-purple-600"
+                  : "border border-[var(--accent)] bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]"
         }`}
       >
         {status === "submitting" && (
@@ -227,7 +227,7 @@ export default function ApplyButton({
       </button>
 
       {status === "error" && errorMessage && (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-[var(--error-text)]" role="alert">
           {errorMessage}
         </p>
       )}

@@ -12,8 +12,6 @@ export interface ImportOptions {
   forceRefresh: boolean;
   /** Which external API to use */
   apiSource: 'jsearch' | 'indeed';
-  /** ID of the HR user to assign imported jobs to (optional, uses system fallback if not provided) */
-  hrUserId?: string;
 }
 
 /**

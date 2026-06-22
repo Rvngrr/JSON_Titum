@@ -1,0 +1,110 @@
+{
+  "pbtResults": {
+    "1. Write bug condition exploration test": {
+      "status": "passed",
+      "failingExample": "All 7 components FAILED as expected, confirming the bug exists:\n\n1. SkillProfile.tsx: bg-white(2x), bg-gray-100(1x), border-gray-200(3x), border-gray-300(2x), text-gray-700(3x), text-gray-600(4x), text-gray-500(3x), text-gray-400(1x)\n2. ResumeUpload.tsx: bg-gray-50(1x), bg-gray-100(1x), border-gray-300(1x), text-gray-700(1x), text-gray-600(2x), text-gray-500(1x), text-gray-400(1x)\n3. WorkExperienceForm.tsx: bg-gray-50(2x), border-gray-200(1x), border-gray-300(9x), text-gray-900(1x), text-gray-700(1x), text-gray-600(8x), text-gray-500(3x), text-gray-400(2x)\n4. EducationForm.tsx: bg-gray-50(2x), border-gray-200(1x), border-gray-300(6x), text-gray-900(1x), text-gray-700(1x), text-gray-600(6x), text-gray-500(1x), text-gray-400(2x)\n5. CertificationsForm.tsx: bg-gray-50(2x), border-gray-200(1x), border-gray-300(5x), text-gray-900(1x), text-gray-700(1x), text-gray-600(5x), text-gray-500(1x), text-gray-400(1x)\n6. WorkPreferencesForm.tsx: bg-white(1x), bg-gray-50(1x), bg-gray-100(1x), border-gray-200(1x), border-gray-300(4x), text-gray-700(4x), text-gray-600(2x)\n7. ExternalProfilesForm.tsx: border-gray-300(1x), text-gray-600(1x)",
+      "lastRunTimestamp": 1782141869757
+    }
+  },
+  "executionHistory": {
+    "1. Write bug condition exploration test": [
+      {
+        "executionId": "a2651175-4780-491c-8d79-256b2931c114",
+        "chatSessionId": "sess_2984b4a6-a67e-4f80-8657-3c740462511e",
+        "timestamp": 1782141628597
+      },
+      {
+        "executionId": "a2651175-4780-491c-8d79-256b2931c114",
+        "chatSessionId": "sess_2984b4a6-a67e-4f80-8657-3c740462511e",
+        "timestamp": 1782141648660
+      },
+      {
+        "executionId": "a2651175-4780-491c-8d79-256b2931c114",
+        "chatSessionId": "sess_2984b4a6-a67e-4f80-8657-3c740462511e",
+        "timestamp": 1782141896182
+      }
+    ],
+    "2. Write preservation property tests (BEFORE implementing fix)": [
+      {
+        "executionId": "a2651175-4780-491c-8d79-256b2931c114",
+        "chatSessionId": "sess_2984b4a6-a67e-4f80-8657-3c740462511e",
+        "timestamp": 1782141629063
+      },
+      {
+        "executionId": "a2651175-4780-491c-8d79-256b2931c114",
+        "chatSessionId": "sess_2984b4a6-a67e-4f80-8657-3c740462511e",
+        "timestamp": 1782141903126
+      }
+    ],
+    "3.1 Convert SkillProfile.tsx to theme-aware styling": [
+      {
+        "executionId": "a2651175-4780-491c-8d79-256b2931c114",
+        "chatSessionId": "sess_2984b4a6-a67e-4f80-8657-3c740462511e",
+        "timestamp": 1782141629802
+      }
+    ],
+    "4.1 Convert ResumeUpload.tsx to theme-aware styling": [
+      {
+        "executionId": "a2651175-4780-491c-8d79-256b2931c114",
+        "chatSessionId": "sess_2984b4a6-a67e-4f80-8657-3c740462511e",
+        "timestamp": 1782141630236
+      }
+    ],
+    "5.1 Convert WorkExperienceForm.tsx to theme-aware styling": [
+      {
+        "executionId": "a2651175-4780-491c-8d79-256b2931c114",
+        "chatSessionId": "sess_2984b4a6-a67e-4f80-8657-3c740462511e",
+        "timestamp": 1782141630630
+      }
+    ],
+    "6.1 Convert EducationForm.tsx to theme-aware styling": [
+      {
+        "executionId": "a2651175-4780-491c-8d79-256b2931c114",
+        "chatSessionId": "sess_2984b4a6-a67e-4f80-8657-3c740462511e",
+        "timestamp": 1782141631290
+      }
+    ],
+    "7.1 Convert CertificationsForm.tsx to theme-aware styling": [
+      {
+        "executionId": "a2651175-4780-491c-8d79-256b2931c114",
+        "chatSessionId": "sess_2984b4a6-a67e-4f80-8657-3c740462511e",
+        "timestamp": 1782141631812
+      }
+    ],
+    "8.1 Convert WorkPreferencesForm.tsx to theme-aware styling": [
+      {
+        "executionId": "a2651175-4780-491c-8d79-256b2931c114",
+        "chatSessionId": "sess_2984b4a6-a67e-4f80-8657-3c740462511e",
+        "timestamp": 1782141632399
+      }
+    ],
+    "9.1 Convert ExternalProfilesForm.tsx to theme-aware styling": [
+      {
+        "executionId": "a2651175-4780-491c-8d79-256b2931c114",
+        "chatSessionId": "sess_2984b4a6-a67e-4f80-8657-3c740462511e",
+        "timestamp": 1782141632876
+      }
+    ],
+    "10.1 Re-run bug condition exploration test": [
+      {
+        "executionId": "a2651175-4780-491c-8d79-256b2931c114",
+        "chatSessionId": "sess_2984b4a6-a67e-4f80-8657-3c740462511e",
+        "timestamp": 1782141633446
+      }
+    ],
+    "10.2 Verify preservation tests still pass": [
+      {
+        "executionId": "a2651175-4780-491c-8d79-256b2931c114",
+        "chatSessionId": "sess_2984b4a6-a67e-4f80-8657-3c740462511e",
+        "timestamp": 1782141633791
+      }
+    ],
+    "11. Checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "a2651175-4780-491c-8d79-256b2931c114",
+        "chatSessionId": "sess_2984b4a6-a67e-4f80-8657-3c740462511e",
+        "timestamp": 1782141634067
+      }
+    ]
+  }
+}

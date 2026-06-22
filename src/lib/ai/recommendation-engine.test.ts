@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   validateRecommendation,
   sortByImpactDescending,
-  generateFallbackRecommendations,
+  generateFallbackRecommendation,
   parseRecommendationsFromAI,
   generateRecommendations,
   type RecommendationSuggestion,
@@ -210,23 +210,14 @@ describe('sortByImpactDescending', () => {
 // generateFallbackRecommendation
 // ============================================================================
 
-describe('generateFallbackRecommendations', () => {
+describe('generateFallbackRecommendation', () => {
   it('returns skill_to_add for a missing required skill', () => {
     const input = makeInput();
-    const fallbacks = generateFallbackRecommendations(input);
+    const fallback = generateFallbackRecommendation(input);
 
-    expect(fallbacks.length).toBeGreaterThanOrEqual(1);
-    const requiredSuggestion = fallbacks.find((f) => f.skill_name === 'TypeScript');
-    expect(requiredSuggestion).toBeDefined();
-    expect(requiredSuggestion!.suggestion_type).toBe('skill_to_add');
-  });
-
-  it('returns multiple suggestions for multiple missing skills', () => {
-    const input = makeInput();
-    const fallbacks = generateFallbackRecommendations(input);
-
-    // Should include both TypeScript (required) and Docker (preferred)
-    expect(fallbacks.length).toBeGreaterThanOrEqual(2);
+    expect(fallback.suggestion_type).toBe('skill_to_add');
+    expect(fallback.skill_name).toBe('TypeScript');
+    expect(fallback.impact_score).toBe(8);
   });
 
   it('returns skill_to_add for missing preferred skill when no required missing', () => {
@@ -241,19 +232,16 @@ describe('generateFallbackRecommendations', () => {
       },
     });
 
-    const fallbacks = generateFallbackRecommendations(input);
+    const fallback = generateFallbackRecommendation(input);
 
-    expect(fallbacks.length).toBeGreaterThanOrEqual(1);
-    expect(fallbacks[0].suggestion_type).toBe('skill_to_add');
-    expect(fallbacks[0].skill_name).toBe('Docker');
+    expect(fallback.suggestion_type).toBe('skill_to_add');
+    expect(fallback.skill_name).toBe('Docker');
+    expect(fallback.impact_score).toBe(5);
   });
 
   it('returns skill_to_improve when no missing skills but match < 100', () => {
     const input = makeInput({
       applicantSkills: [makeSkill({ name: 'React', proficiency_level: 'beginner' })],
-      jobRequiredSkills: [
-        makeJobRequiredSkill({ skill_name: 'React', importance: 'required' }),
-      ],
       matchResult: {
         match_percentage: 90,
         matched_skills: ['React'],
@@ -261,20 +249,15 @@ describe('generateFallbackRecommendations', () => {
       },
     });
 
-    const fallbacks = generateFallbackRecommendations(input);
+    const fallback = generateFallbackRecommendation(input);
 
-    expect(fallbacks.length).toBeGreaterThanOrEqual(1);
-    const improveSuggestion = fallbacks.find((f) => f.suggestion_type === 'skill_to_improve');
-    expect(improveSuggestion).toBeDefined();
-    expect(improveSuggestion!.skill_name).toBe('React');
+    expect(fallback.suggestion_type).toBe('skill_to_improve');
+    expect(fallback.skill_name).toBe('React');
   });
 
   it('returns generic fallback when all skills are at expert level', () => {
     const input = makeInput({
       applicantSkills: [makeSkill({ name: 'React', proficiency_level: 'expert' })],
-      jobRequiredSkills: [
-        makeJobRequiredSkill({ skill_name: 'React', importance: 'required' }),
-      ],
       matchResult: {
         match_percentage: 95,
         matched_skills: ['React'],
@@ -282,10 +265,10 @@ describe('generateFallbackRecommendations', () => {
       },
     });
 
-    const fallbacks = generateFallbackRecommendations(input);
+    const fallback = generateFallbackRecommendation(input);
 
-    expect(fallbacks.length).toBeGreaterThanOrEqual(1);
-    expect(fallbacks[0].skill_name).toBe('General Skills');
+    expect(fallback.suggestion_type).toBe('skill_to_improve');
+    expect(fallback.skill_name).toBe('General Skills');
   });
 });
 

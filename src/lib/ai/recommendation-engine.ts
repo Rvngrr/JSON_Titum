@@ -89,80 +89,65 @@ export function sortByImpactDescending(
 }
 
 /**
- * Generates multiple fallback recommendations when AI fails to produce suggestions
- * but the match is below 100%. Ensures meaningful guidance is still provided.
+ * Generates a fallback recommendation when AI fails to produce suggestions
+ * but the match is below 100%. Ensures at least one recommendation is returned.
  */
-export function generateFallbackRecommendations(
+export function generateFallbackRecommendation(
   input: RecommendationInput
-): RecommendationSuggestion[] {
+): RecommendationSuggestion {
   const { matchResult, jobRequiredSkills, applicantSkills } = input;
-  const suggestions: RecommendationSuggestion[] = [];
 
-  // Add suggestions for all missing required skills
-  const missingRequired = jobRequiredSkills.filter(
+  // Find the first missing required skill
+  const missingRequired = jobRequiredSkills.find(
     (jrs) =>
       jrs.importance === 'required' &&
-      matchResult.missing_skills.some(
-        (ms) => ms.toLowerCase() === jrs.skill_name.toLowerCase()
-      )
+      matchResult.missing_skills.includes(jrs.skill_name)
   );
 
-  for (const skill of missingRequired) {
-    suggestions.push({
+  if (missingRequired) {
+    return {
       suggestion_type: 'skill_to_add',
-      skill_name: skill.skill_name,
-      description: `Add ${skill.skill_name} to your profile as it is a required skill for this position.`,
-      impact_score: Math.min(10, Math.max(6, 10 - suggestions.length)),
-    });
+      skill_name: missingRequired.skill_name,
+      description: `Add ${missingRequired.skill_name} to your profile as it is a required skill for this position.`,
+      impact_score: 8,
+    };
   }
 
-  // Add suggestions for missing preferred skills
-  const missingPreferred = jobRequiredSkills.filter(
-    (jrs) =>
-      jrs.importance === 'preferred' &&
-      matchResult.missing_skills.some(
-        (ms) => ms.toLowerCase() === jrs.skill_name.toLowerCase()
-      )
+  // Find any missing skill (preferred)
+  const missingPreferred = jobRequiredSkills.find(
+    (jrs) => matchResult.missing_skills.includes(jrs.skill_name)
   );
 
-  for (const skill of missingPreferred) {
-    suggestions.push({
+  if (missingPreferred) {
+    return {
       suggestion_type: 'skill_to_add',
-      skill_name: skill.skill_name,
-      description: `Consider adding ${skill.skill_name} to strengthen your application for this role.`,
-      impact_score: Math.min(5, Math.max(3, 6 - suggestions.length)),
-    });
+      skill_name: missingPreferred.skill_name,
+      description: `Consider adding ${missingPreferred.skill_name} to strengthen your application.`,
+      impact_score: 5,
+    };
   }
 
-  // Add improvement suggestions for matched skills with low proficiency
-  const improvableSkills = applicantSkills.filter(
-    (s) =>
-      s.proficiency_level !== 'expert' &&
-      matchResult.matched_skills.some(
-        (ms) => ms.toLowerCase() === s.name.toLowerCase()
-      )
+  // If no missing skills but match < 100, suggest improving an existing skill
+  const existingSkillToImprove = applicantSkills.find(
+    (s) => s.proficiency_level !== 'expert'
   );
 
-  for (const skill of improvableSkills.slice(0, 3)) {
-    suggestions.push({
+  if (existingSkillToImprove) {
+    return {
       suggestion_type: 'skill_to_improve',
-      skill_name: skill.name,
-      description: `Improve your ${skill.name} proficiency from ${skill.proficiency_level} to a higher level to increase your competitiveness.`,
-      impact_score: skill.proficiency_level === 'beginner' ? 5 : 3,
-    });
+      skill_name: existingSkillToImprove.name,
+      description: `Improve your ${existingSkillToImprove.name} proficiency from ${existingSkillToImprove.proficiency_level} to a higher level.`,
+      impact_score: 4,
+    };
   }
 
-  // Ensure at least one suggestion
-  if (suggestions.length === 0) {
-    suggestions.push({
-      suggestion_type: 'skill_to_improve',
-      skill_name: 'General Skills',
-      description: 'Continue developing your expertise to better align with this role.',
-      impact_score: 3,
-    });
-  }
-
-  return suggestions;
+  // Last resort fallback
+  return {
+    suggestion_type: 'skill_to_improve',
+    skill_name: 'General Skills',
+    description: 'Continue developing your expertise to better align with this role.',
+    impact_score: 3,
+  };
 }
 
 /**
@@ -273,7 +258,7 @@ export async function generateRecommendations(
 
   // Ensure at least one suggestion when match < 100
   if (recommendations.length === 0) {
-    recommendations = generateFallbackRecommendations(input);
+    recommendations = [generateFallbackRecommendation(input)];
   }
 
   // Sort by impact score descending

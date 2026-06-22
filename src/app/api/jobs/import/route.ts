@@ -111,7 +111,6 @@ export async function POST(request: NextRequest) {
     location,
     forceRefresh,
     apiSource: "jsearch",
-    hrUserId: user.id,
   };
 
   let result: ImportResult;

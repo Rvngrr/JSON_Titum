@@ -7,7 +7,6 @@ import MatchPercentageBadge from "@/components/applicant/MatchPercentageBadge";
 import ApplyButton from "@/components/applicant/ApplyButton";
 import ApplicationStatusBadge from "@/components/applicant/ApplicationStatusBadge";
 import RecommendationsList from "@/components/applicant/RecommendationsList";
-import { useToast } from "@/components/shared/Toast";
 import type {
   JobDescription,
   JobRequiredSkill,
@@ -44,7 +43,6 @@ export default function JobDetail({ jobId }: JobDetailProps) {
   const [error, setError] = useState<string | null>(null);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [recommendationsError, setRecommendationsError] = useState<string | null>(null);
-  const { addToast } = useToast();
 
   // ATS Score state
   const [atsScore, setAtsScore] = useState<ATSScoreResult | null>(null);
@@ -85,18 +83,14 @@ export default function JobDetail({ jobId }: JobDetailProps) {
           setRecommendationsError(
             data.error || "Failed to generate recommendations"
           );
-          if (data.error?.includes("API key")) {
-            addToast("warning", "AI service unavailable. Showing basic recommendations.");
-          }
         }
       } catch {
         setRecommendationsError("Failed to load recommendations");
-        addToast("error", "Failed to load recommendations.");
       } finally {
         setRecommendationsLoading(false);
       }
     },
-    [addToast]
+    []
   );
 
   useEffect(() => {
