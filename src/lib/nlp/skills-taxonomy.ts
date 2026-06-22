@@ -302,6 +302,17 @@ const OTHER: SkillEntry[] = [
   { canonical: 'API Design', synonyms: ['api architecture', 'api development'], category: 'Other', industries: ['software-engineering'] },
   { canonical: 'System Design', synonyms: ['system architecture', 'distributed systems', 'scalable systems'], category: 'Other', industries: ['software-engineering', 'devops'] },
   { canonical: 'Event-Driven Architecture', synonyms: ['event driven', 'EDA', 'event sourcing'], category: 'Other', industries: ['software-engineering', 'finance'] },
+  { canonical: 'HTML', synonyms: ['html5', 'HTML5', 'hypertext markup language'], category: 'Other', industries: ['software-engineering'] },
+  { canonical: 'CSS', synonyms: ['css3', 'CSS3', 'cascading style sheets', 'stylesheets'], category: 'Other', industries: ['software-engineering'] },
+  { canonical: 'HTML/CSS', synonyms: ['html css', 'html & css', 'html and css'], category: 'Other', industries: ['software-engineering'] },
+  { canonical: 'OpenCV', synonyms: ['opencv', 'open cv', 'cv2'], category: 'Other', industries: ['data-science', 'software-engineering'] },
+  { canonical: 'Arduino', synonyms: ['arduino uno', 'arduino ide', 'arduino programming'], category: 'Other', industries: ['software-engineering'] },
+  { canonical: 'Raspberry Pi', synonyms: ['rpi', 'raspi', 'raspberry pi'], category: 'Other', industries: ['software-engineering'] },
+  { canonical: 'Streamlit', synonyms: ['streamlit app', 'streamlit framework'], category: 'Other', industries: ['data-science', 'software-engineering'] },
+  { canonical: 'Excel', synonyms: ['microsoft excel', 'ms excel', 'spreadsheets', 'xlsx'], category: 'Other', industries: ['data-science', 'finance'] },
+  { canonical: 'GitHub', synonyms: ['github', 'gh'], category: 'Other', industries: ['software-engineering', 'devops'] },
+  { canonical: 'C#', synonyms: ['csharp', 'c sharp', 'c#', 'dotnet c#'], category: 'Other', industries: ['software-engineering', 'game-development'] },
+  { canonical: 'C/C++', synonyms: ['c/c++', 'c and c++', 'c & c++'], category: 'Other', industries: ['software-engineering', 'game-development'] },
 ];
 
 // ─── Combined Taxonomy ───────────────────────────────────────────────────────

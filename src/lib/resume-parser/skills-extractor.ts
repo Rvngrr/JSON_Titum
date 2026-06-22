@@ -108,6 +108,16 @@ function parseSkillsFromLines(lines: string[]): string[] {
     const cleaned = cleanSkillToken(trimmed);
     if (cleaned.length > 0 && cleaned.length < 60 && isValidSkillToken(cleaned)) {
       skills.push(cleaned);
+      continue;
+    }
+
+    // Last resort: try splitting by multiple spaces (common in PDF two-column layouts)
+    if (trimmed.includes('  ')) {
+      const spaceSplit = trimmed.split(/\s{2,}/).map(s => cleanSkillToken(s.trim()));
+      const validParts = spaceSplit.filter(item => item.length > 0 && item.length < 60 && isValidSkillToken(item));
+      if (validParts.length > 1) {
+        skills.push(...validParts);
+      }
     }
   }
 
@@ -255,6 +265,21 @@ export function extractSkills(input: SkillsExtractionInput): ExtractedSkill[] {
       skillMap.set(key, {
         name: canonical,
         rawName: existing?.rawName ?? raw,
+        proficiencyLevel: 'intermediate',
+        source: 'skills',
+      });
+    }
+  }
+
+  // 1b. Also scan skills section lines for known taxonomy matches
+  // (handles cases where PDF extraction doesn't preserve delimiters)
+  const skillsSectionScanned = scanLinesForSkills(skillsLines);
+  for (const { rawName, canonical } of skillsSectionScanned) {
+    const key = canonical.toLowerCase();
+    if (!skillMap.has(key)) {
+      skillMap.set(key, {
+        name: canonical,
+        rawName,
         proficiencyLevel: 'intermediate',
         source: 'skills',
       });

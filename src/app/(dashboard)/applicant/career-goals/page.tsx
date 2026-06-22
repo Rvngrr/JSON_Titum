@@ -139,17 +139,30 @@ export default function CareerGoalsPage() {
         return;
       }
 
-      // Get existing profile
-      const { data: profile } = await supabase
+      // Get existing profile or create one
+      let profile;
+      const { data: existingProfile } = await supabase
         .from("skill_profiles")
         .select("id, work_preferences")
         .eq("user_id", user.id)
         .single();
 
-      if (!profile) {
-        setError("Profile not found. Please complete your profile first.");
-        setSaving(false);
-        return;
+      if (existingProfile) {
+        profile = existingProfile;
+      } else {
+        // Auto-create skill_profiles row if it doesn't exist
+        const { data: newProfile, error: createError } = await supabase
+          .from("skill_profiles")
+          .insert({ user_id: user.id })
+          .select("id, work_preferences")
+          .single();
+
+        if (createError || !newProfile) {
+          setError("Failed to create profile. Please try again.");
+          setSaving(false);
+          return;
+        }
+        profile = newProfile;
       }
 
       // Merge with existing work_preferences

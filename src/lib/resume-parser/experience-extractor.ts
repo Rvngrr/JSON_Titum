@@ -169,12 +169,14 @@ function isCurrentPosition(endDate: string): boolean {
 export function extractExperience(lines: string[]): WorkExperienceEntry[] {
   const entries: WorkExperienceEntry[] = [];
   let currentEntry: WorkExperienceEntry | null = null;
+  const pendingBullets: string[] = [];
 
   for (const line of lines) {
     const trimmedLine = line.trim();
 
-    // Skip empty lines
+    // Skip empty lines and section header
     if (!trimmedLine) continue;
+    if (/^(WORK\s+)?EXPERIENCE$/i.test(trimmedLine)) continue;
 
     // Check if this line has a date pattern (new entry header)
     if (hasDatePattern(trimmedLine)) {
@@ -188,7 +190,7 @@ export function extractExperience(lines: string[]): WorkExperienceEntry[] {
 
       // Extract date range
       const dateInfo = extractDateRange(trimmedLine);
-      if (!dateInfo) continue; // shouldn't happen since hasDatePattern was true, but guard
+      if (!dateInfo) continue;
 
       // Extract the text portion (everything before or around the date range)
       const textBeforeDate = trimmedLine.substring(0, dateInfo.matchIndex).trim();
@@ -208,16 +210,24 @@ export function extractExperience(lines: string[]): WorkExperienceEntry[] {
         isCurrent: isCurrentPosition(dateInfo.endDate),
         highlights: [],
       };
-    } else if (currentEntry && isBulletLine(trimmedLine)) {
-      // Bullet point belongs to the current entry
+
+      // Attach pending bullets (lines that appeared before this date header)
+      if (pendingBullets.length > 0) {
+        currentEntry.highlights.push(...pendingBullets.slice(0, MAX_BULLETS_PER_ENTRY));
+        pendingBullets.length = 0;
+      }
+    } else if (currentEntry && (isBulletLine(trimmedLine) || (!trimmedLine.includes('@') && !trimmedLine.includes('•') && trimmedLine.length > 20 && trimmedLine.length < MAX_BULLET_LENGTH))) {
+      // Bullet point or description line belongs to the current entry
       if (currentEntry.highlights.length < MAX_BULLETS_PER_ENTRY) {
-        const cleaned = cleanBullet(trimmedLine);
+        const cleaned = isBulletLine(trimmedLine) ? cleanBullet(trimmedLine) : trimmedLine;
         if (cleaned.length > 0) {
           currentEntry.highlights.push(cleaned);
         }
       }
+    } else if (!currentEntry && trimmedLine.length > 20 && trimmedLine.length < MAX_BULLET_LENGTH && !trimmedLine.includes('@') && !trimmedLine.includes('•')) {
+      // Lines before any date header — store as pending bullets
+      pendingBullets.push(trimmedLine);
     }
-    // Lines without date patterns and without bullet markers are skipped (Req 4.7)
   }
 
   // Don't forget the last entry

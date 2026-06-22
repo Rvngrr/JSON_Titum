@@ -44,11 +44,11 @@ interface HeaderCandidate {
  * Each key is a SectionType, value is an array of keywords that map to it.
  */
 const SECTION_KEYWORDS: Record<Exclude<SectionType, 'header-contact' | 'unstructured'>, string[]> = {
-  experience: ['experience', 'work experience', 'employment', 'internships', 'leadership'],
+  experience: ['experience', 'work experience', 'employment', 'internships', 'leadership', 'project experience'],
   education: ['education', 'academic background', 'qualifications'],
   skills: ['skills', 'technical skills', 'core competencies', 'programming'],
   certifications: ['certifications', 'certificates', 'training', 'seminars'],
-  projects: ['projects', 'portfolio', 'personal projects'],
+  projects: ['projects', 'portfolio', 'personal projects', 'project experience'],
   achievements: ['achievements', 'awards', 'honors'],
 };
 

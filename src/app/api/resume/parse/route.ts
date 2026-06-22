@@ -71,11 +71,13 @@ export async function POST(request: Request) {
           success: false,
           skills: [],
           error:
-            "Could not extract text from the uploaded file. Please try a different file or enter skills manually.",
+            "Could not extract text from the uploaded file. The PDF may be image-based (scanned). Please upload a text-based PDF or DOCX, or enter skills manually.",
         } satisfies ResumeParseResponse,
         { status: 422 }
       );
     }
+
+    console.log("[resume/parse] Extracted text length:", rawText.length, "| Preview:", rawText.substring(0, 300));
 
     // 3. Parse resume using local-first orchestrator with optional AI enhancement
     console.log("[resume/parse] Step 3: Parsing resume with orchestrator, text length:", rawText.length);
@@ -134,22 +136,57 @@ export async function POST(request: Request) {
       date: cert.date || '',
     }));
 
-    const { data: skillProfile, error: upsertError } = await supabase
+    // 4. Save structured profile data to skill_profiles
+    console.log("[resume/parse] Step 4: Saving skill_profile for user:", user_id);
+
+    // Check if profile already exists
+    const { data: existingProfile } = await supabase
       .from("skill_profiles")
-      .upsert(
-        {
+      .select("id")
+      .eq("user_id", user_id)
+      .maybeSingle();
+
+    let skillProfile: { id: string } | null = null;
+    let upsertError: { message: string } | null = null;
+
+    if (existingProfile) {
+      // Update existing profile
+      const { data, error } = await supabase
+        .from("skill_profiles")
+        .update({
+          resume_file_path: file_path,
+          raw_resume_text: rawText,
+          work_experience: workExperience.length > 0 ? workExperience : [],
+          education: education.length > 0 ? education : [],
+          certifications: certifications.length > 0 ? certifications : [],
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existingProfile.id)
+        .select("id")
+        .single();
+
+      skillProfile = data;
+      upsertError = error;
+    } else {
+      // Insert new profile
+      const { data, error } = await supabase
+        .from("skill_profiles")
+        .insert({
           user_id,
           resume_file_path: file_path,
           raw_resume_text: rawText,
-          work_experience: workExperience.length > 0 ? workExperience : undefined,
-          education: education.length > 0 ? education : undefined,
-          certifications: certifications.length > 0 ? certifications : undefined,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" }
-      )
-      .select("id")
-      .single();
+          work_experience: workExperience.length > 0 ? workExperience : [],
+          education: education.length > 0 ? education : [],
+          certifications: certifications.length > 0 ? certifications : [],
+        })
+        .select("id")
+        .single();
+
+      skillProfile = data;
+      upsertError = error;
+    }
+
+    console.log("[resume/parse] Step 4 result:", { skillProfileId: skillProfile?.id, error: upsertError?.message });
 
     if (upsertError || !skillProfile) {
       console.error("[resume/parse] Step 4 failed:", upsertError);
@@ -191,6 +228,8 @@ export async function POST(request: Request) {
       const { error: insertError } = await supabase
         .from("skills")
         .insert(skillRows);
+
+      console.log("[resume/parse] Step 6: Inserted", skillRows.length, "skills, error:", insertError?.message ?? "none");
 
       if (insertError) {
         return Response.json(
@@ -365,25 +404,77 @@ async function extractTextFromFile(
 }
 
 /**
- * Basic PDF text extraction using pdf-parse library.
+ * PDF text extraction with multiple strategies.
+ * Uses unpdf (serverless-compatible), falls back to pdf-parse, then binary extraction.
  */
 async function extractTextFromPDF(buffer: Buffer): Promise<string> {
+  // Strategy 1: Use unpdf (works in serverless/Node.js without workers)
   try {
-    const pdf = (await import("pdf-parse")).default;
-    const data = await pdf(buffer);
-    return data.text?.trim() ?? "";
-  } catch (error) {
-    console.error("PDF parse error:", error);
-    // Fallback: extract printable character sequences from binary
-    const content = buffer.toString("latin1");
-    const printableRegex = /[\x20-\x7E]{4,}/g;
-    const segments: string[] = [];
-    let match;
-    while ((match = printableRegex.exec(content)) !== null) {
-      segments.push(match[0]);
+    const { extractText } = await import("unpdf");
+    const result = await extractText(new Uint8Array(buffer));
+    const text = result.text?.trim() ?? "";
+    if (text.length > 50) {
+      console.log("[PDF] unpdf extracted", text.length, "chars");
+      return text;
     }
-    return segments.join(" ").trim();
+    console.warn("[PDF] unpdf returned short text:", text.length, "chars");
+  } catch (error) {
+    console.error("[PDF] unpdf failed:", error instanceof Error ? error.message : error);
   }
+
+  // Strategy 2: Use pdf-parse library
+  try {
+    const pdfParse = (await import("pdf-parse")).default;
+    const data = await pdfParse(buffer, { max: 0 });
+    const text = data.text?.trim() ?? "";
+    if (text.length > 50) {
+      console.log("[PDF] pdf-parse extracted", text.length, "chars");
+      return text;
+    }
+    console.warn("[PDF] pdf-parse returned very short text:", text.length, "chars");
+  } catch (error) {
+    console.error("[PDF] pdf-parse failed:", error instanceof Error ? error.message : error);
+  }
+
+  // Strategy 3: Extract text streams from PDF binary
+  try {
+    const content = buffer.toString("binary");
+    const textParts: string[] = [];
+
+    const btEtRegex = /BT[\s\S]*?ET/g;
+    let match;
+    while ((match = btEtRegex.exec(content)) !== null) {
+      const strRegex = /\(([^)]*)\)/g;
+      let strMatch;
+      while ((strMatch = strRegex.exec(match[0])) !== null) {
+        if (strMatch[1].trim()) {
+          textParts.push(strMatch[1]);
+        }
+      }
+    }
+
+    if (textParts.length > 0) {
+      const extracted = textParts.join(" ").replace(/\s+/g, " ").trim();
+      console.log("[PDF] Binary extraction found", extracted.length, "chars");
+      if (extracted.length > 50) {
+        return extracted;
+      }
+    }
+  } catch (error) {
+    console.warn("[PDF] Binary text stream extraction failed:", error);
+  }
+
+  // Strategy 4: Simple printable character extraction (last resort)
+  const content = buffer.toString("latin1");
+  const printableRegex = /[\x20-\x7E]{4,}/g;
+  const segments: string[] = [];
+  let fallbackMatch;
+  while ((fallbackMatch = printableRegex.exec(content)) !== null) {
+    segments.push(fallbackMatch[0]);
+  }
+  const fallbackText = segments.join(" ").trim();
+  console.log("[PDF] Fallback extraction:", fallbackText.length, "chars");
+  return fallbackText;
 }
 
 /**
