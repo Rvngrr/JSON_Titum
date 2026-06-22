@@ -49,6 +49,71 @@ export interface SkillProfile {
   created_at: string;
   /** ISO timestamp of last skill profile update */
   updated_at: string;
+  /** Calculated total years of experience from work entries */
+  total_years_experience?: number | null;
+  /** Array of work experience entries (JSONB) */
+  work_experience?: WorkExperienceEntry[] | null;
+  /** Array of education entries (JSONB) */
+  education?: EducationEntry[] | null;
+  /** Array of certification entries (JSONB) */
+  certifications?: CertificationEntry[] | null;
+  /** External profile URLs (JSONB) */
+  external_urls?: ExternalUrls | null;
+  /** Work preferences (JSONB) */
+  work_preferences?: WorkPreferences | null;
+}
+
+/**
+ * A single work experience entry stored in skill_profiles.work_experience JSONB.
+ */
+export interface WorkExperienceEntry {
+  id: string;
+  title: string;
+  company: string;
+  industry?: string;
+  startDate: string;
+  endDate?: string;
+  isCurrent?: boolean;
+  description?: string;
+}
+
+/**
+ * A single education entry stored in skill_profiles.education JSONB.
+ */
+export interface EducationEntry {
+  id: string;
+  degree: string;
+  institution: string;
+  fieldOfStudy?: string;
+  graduationYear: string;
+}
+
+/**
+ * A single certification entry stored in skill_profiles.certifications JSONB.
+ */
+export interface CertificationEntry {
+  id: string;
+  name: string;
+  issuer: string;
+  date: string;
+}
+
+/**
+ * External profile URLs stored in skill_profiles.external_urls JSONB.
+ */
+export interface ExternalUrls {
+  linkedin?: string;
+  github?: string;
+  portfolio?: string;
+}
+
+/**
+ * Work preferences stored in skill_profiles.work_preferences JSONB.
+ */
+export interface WorkPreferences {
+  workMode?: 'remote' | 'on-site' | 'hybrid';
+  willingToRelocate?: boolean;
+  targetIndustries?: string[];
 }
 
 /**
@@ -89,6 +154,32 @@ export interface JobDescription {
   created_at: string;
   /** ISO timestamp of last job update */
   updated_at: string;
+  /** External API job identifier for deduplication */
+  external_job_id?: string | null;
+  /** Source of the job ('jsearch', 'indeed', or null for manual) */
+  source?: string | null;
+  /** Original company name from API */
+  source_company?: string | null;
+  /** External application URL */
+  job_link?: string | null;
+  /** Minimum salary */
+  salary_min?: number | null;
+  /** Maximum salary */
+  salary_max?: number | null;
+  /** Currency code (e.g., 'PHP') */
+  salary_currency?: string | null;
+  /** Period (e.g., 'month', 'year') */
+  salary_period?: string | null;
+  /** Employment type ('full-time', 'part-time', etc.) */
+  employment_type?: string | null;
+  /** City */
+  location_city?: string | null;
+  /** State/Province */
+  location_state?: string | null;
+  /** Job highlights from API */
+  highlights?: Record<string, string[]> | null;
+  /** When the job was imported */
+  imported_at?: string | null;
 }
 
 /**

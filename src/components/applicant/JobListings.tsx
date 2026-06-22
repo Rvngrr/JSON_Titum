@@ -19,6 +19,7 @@ export default function JobListings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
+  const [applicationStatuses, setApplicationStatuses] = useState<Map<string, "applied" | "applied_externally">>(new Map());
   const [statusFetchFailed, setStatusFetchFailed] = useState(false);
 
   // Filter state
@@ -73,7 +74,7 @@ export default function JobListings() {
         const { data: applicationData, error: applicationError } =
           await supabase
             .from("applications")
-            .select("job_description_id")
+            .select("job_description_id, status")
             .eq("applicant_id", user.id);
 
         if (applicationError) {
@@ -85,6 +86,12 @@ export default function JobListings() {
             )
           );
           setAppliedJobIds(appliedIds);
+
+          const statusMap = new Map<string, "applied" | "applied_externally">();
+          for (const app of applicationData as Array<{ job_description_id: string; status: string }>) {
+            statusMap.set(app.job_description_id, app.status as "applied" | "applied_externally");
+          }
+          setApplicationStatuses(statusMap);
         }
 
         const matchMap = new Map<string, MatchResult>();
@@ -410,15 +417,20 @@ export default function JobListings() {
                   {!statusFetchFailed && (
                     <ApplicationStatusBadge
                       applied={appliedJobIds.has(job.id)}
+                      applicationStatus={applicationStatuses.get(job.id) ?? null}
                     />
                   )}
                   <div className={statusFetchFailed ? "ml-auto" : ""}>
                     <ApplyButton
                       jobId={job.id}
                       initialStatus={
-                        appliedJobIds.has(job.id) ? "applied" : "not_applied"
+                        appliedJobIds.has(job.id)
+                          ? (applicationStatuses.get(job.id) === "applied_externally" ? "applied_externally" : "applied")
+                          : "not_applied"
                       }
                       jobStatus={job.status}
+                      jobLink={job.job_link}
+                      jobTitle={job.title}
                       onApplicationSuccess={() =>
                         handleApplicationSuccess(job.id)
                       }

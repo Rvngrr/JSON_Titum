@@ -1,10 +1,19 @@
 import { createClient } from "../supabase/server";
-import type { Application } from "./types";
+import type { Application, ApplicationStatus } from "./types";
+
+/**
+ * Valid application statuses for validation.
+ */
+const VALID_STATUSES: ApplicationStatus[] = ["applied", "applied_externally"];
 
 /**
  * Creates a new application for an applicant to a job.
  * Validates that the job is in "published" status before inserting.
  * Handles duplicate constraint violations (Postgres error code 23505).
+ *
+ * @param applicantId - UUID of the applicant (authenticated user)
+ * @param jobId - UUID of the job description to apply to
+ * @param status - Application status: 'applied' for internal, 'applied_externally' for external confirmations. Defaults to 'applied'.
  *
  * @throws Error with message "Job is not published" if job status !== "published"
  * @throws Error with message "You have already applied to this job" on duplicate
@@ -12,9 +21,15 @@ import type { Application } from "./types";
  */
 export async function createApplication(
   applicantId: string,
-  jobId: string
+  jobId: string,
+  status: ApplicationStatus = "applied"
 ): Promise<Application> {
   const supabase = await createClient();
+
+  // Validate status
+  if (!VALID_STATUSES.includes(status)) {
+    throw new Error(`Invalid application status: ${status}`);
+  }
 
   // Validate that the job exists and is published
   const { data: job, error: jobError } = await supabase
@@ -31,12 +46,13 @@ export async function createApplication(
     throw new Error("Job is not published");
   }
 
-  // Insert the application record
+  // Insert the application record with the specified status
   const { data, error } = await supabase
     .from("applications")
     .insert({
       applicant_id: applicantId,
       job_description_id: jobId,
+      status,
     })
     .select()
     .single();

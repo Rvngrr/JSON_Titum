@@ -36,13 +36,18 @@ describe("ResumeUpload", () => {
       error: null,
     });
     mockUpload.mockResolvedValue({ error: null });
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        success: true,
-        skills: [{ name: "React", proficiency_level: "advanced" }],
-      }),
-    });
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ file_path: "user-123/resume.pdf", user_id: "user-123" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          skills: [{ name: "React", proficiency_level: "advanced" }],
+        }),
+      });
   });
 
   it("renders the drop zone with instructions", () => {
@@ -106,6 +111,21 @@ describe("ResumeUpload", () => {
 
   it("uploads valid PDF and calls onSkillsExtracted on success", async () => {
     const onSkillsExtracted = vi.fn();
+    // Mock the upload endpoint
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ file_path: "user-123/resume.pdf", user_id: "user-123" }),
+      })
+      // Mock the parse endpoint
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          skills: [{ name: "React", proficiency_level: "advanced" }],
+        }),
+      });
+
     render(<ResumeUpload onSkillsExtracted={onSkillsExtracted} />);
 
     const file = createMockFile("resume.pdf", 1024, "application/pdf");
@@ -119,21 +139,29 @@ describe("ResumeUpload", () => {
       ]);
     });
 
-    expect(mockUpload).toHaveBeenCalledWith(
-      "user-123/resume.pdf",
-      file,
-      { cacheControl: "3600", upsert: true }
+    // Verify upload API was called
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/resume/upload",
+      expect.objectContaining({ method: "POST" })
     );
   });
 
   it("calls onParseFailure when resume parsing fails", async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        success: false,
-        error: "Failed to extract skills from resume. Please enter your skills manually.",
-      }),
-    });
+    // Reset the default fetch mocks and set up custom ones
+    mockFetch.mockReset();
+    // Upload succeeds, parse returns failure
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ file_path: "user-123/resume.pdf", user_id: "user-123" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: false,
+          error: "Failed to extract skills from resume. Please enter your skills manually.",
+        }),
+      });
 
     const onParseFailure = vi.fn();
     render(<ResumeUpload onParseFailure={onParseFailure} />);
@@ -171,8 +199,10 @@ describe("ResumeUpload", () => {
   });
 
   it("shows error when Supabase upload fails", async () => {
-    mockUpload.mockResolvedValue({
-      error: { message: "Storage quota exceeded" },
+    mockFetch.mockReset();
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ error: "Storage quota exceeded" }),
     });
 
     render(<ResumeUpload />);
@@ -184,7 +214,7 @@ describe("ResumeUpload", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("Upload failed: Storage quota exceeded")
+        screen.getByText("Storage quota exceeded")
       ).toBeInTheDocument();
     });
   });

@@ -1,6 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import JobDescriptionList from "@/components/hr/JobDescriptionList";
+import ImportJobsPanel from "@/components/hr/ImportJobsPanel";
+import PipelineHealthDashboard from "@/components/hr/PipelineHealthDashboard";
 
 export default function HRDashboardPage() {
   return (
@@ -13,7 +15,21 @@ export default function HRDashboardPage() {
         </p>
       </header>
 
-      <section aria-labelledby="job-postings-heading" className="mt-6">
+      <section aria-labelledby="import-section" className="mt-6">
+        <ImportJobsPanel />
+      </section>
+
+      <section aria-labelledby="pipeline-health-heading" className="mt-8">
+        <h2
+          id="pipeline-health-heading"
+          className="mb-4 text-xl font-semibold text-gray-800"
+        >
+          Pipeline Health
+        </h2>
+        <PipelineHealthDashboard />
+      </section>
+
+      <section aria-labelledby="job-postings-heading" className="mt-8">
         <h2
           id="job-postings-heading"
           className="mb-4 text-xl font-semibold text-gray-800"

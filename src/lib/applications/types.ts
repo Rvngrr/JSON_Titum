@@ -10,6 +10,13 @@
 // ============================================================================
 
 /**
+ * Valid application statuses.
+ * - 'applied': direct application through the platform (internal jobs)
+ * - 'applied_externally': applicant confirmed they applied via external link
+ */
+export type ApplicationStatus = "applied" | "applied_externally";
+
+/**
  * A job application record linking an applicant to a job description.
  * Mapped to the `applications` database table.
  */
@@ -20,7 +27,11 @@ export interface Application {
   applicant_id: string;
   /** UUID of the job description applied to */
   job_description_id: string;
+  /** Application status: 'applied' for internal, 'applied_externally' for external confirmations */
+  status: ApplicationStatus;
   /** ISO timestamp of when the application was submitted */
+  applied_at: string;
+  /** ISO timestamp of record creation */
   created_at: string;
 }
 
@@ -34,7 +45,11 @@ export interface Application {
  */
 export interface ApplicationService {
   /** Create a new application. Throws if duplicate or job not published. */
-  createApplication(applicantId: string, jobId: string): Promise<Application>;
+  createApplication(
+    applicantId: string,
+    jobId: string,
+    status?: ApplicationStatus
+  ): Promise<Application>;
 
   /** Check if an applicant has applied to a specific job. */
   hasApplied(applicantId: string, jobId: string): Promise<boolean>;
