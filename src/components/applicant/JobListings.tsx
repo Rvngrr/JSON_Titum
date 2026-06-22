@@ -254,7 +254,7 @@ export default function JobListings() {
               onChange={(e) => setSkillFilter(e.target.value)}
               className="mt-1 block w-full input-glass px-4 py-2.5 text-sm"
             />
-            <p className="mt-1 text-xs text-[var(--text-muted)]">
+            <p className="mt-1 text-xs text-gray-500">
               Comma-separated skills
             </p>
           </div>
@@ -309,8 +309,8 @@ export default function JobListings() {
 
       {/* Results */}
       {filteredJobs.length === 0 ? (
-        <div className="rounded-xl border border-[var(--warning)] bg-[var(--warning-bg)] p-6 text-center">
-          <p className="text-sm text-[var(--warning-text)]">
+        <div className="rounded-md border border-yellow-200 bg-yellow-50 p-6 text-center">
+          <p className="text-sm text-yellow-800">
             {hasActiveFilters
               ? "No jobs match your criteria. Try broadening your search."
               : "No published job listings are available at this time."}
@@ -318,18 +318,18 @@ export default function JobListings() {
         </div>
       ) : (
         <div className="space-y-4">
-          <p className="text-sm text-[var(--text-muted)]">
+          <p className="text-sm text-gray-500">
             Showing {filteredJobs.length}{" "}
             {filteredJobs.length === 1 ? "job" : "jobs"}
           </p>
 
           {statusFetchFailed && (
             <div
-              className="rounded-xl border border-[var(--accent)] bg-[var(--accent-light)] p-3"
+              className="rounded-md border border-blue-200 bg-blue-50 p-3"
               role="status"
               aria-live="polite"
             >
-              <p className="text-sm text-[var(--accent)]">
+              <p className="text-sm text-blue-700">
                 Application status is temporarily unavailable.
               </p>
             </div>
@@ -349,7 +349,7 @@ export default function JobListings() {
                     >
                       {job.title}
                     </Link>
-                    <p className="mt-1 line-clamp-2 text-sm text-[var(--text-secondary)]">
+                    <p className="mt-1 line-clamp-2 text-sm text-slate-300">
                       {job.description}
                     </p>
                     {job.requiredSkills.length > 0 && (
@@ -357,7 +357,7 @@ export default function JobListings() {
                         {job.requiredSkills.map((skill) => (
                           <span
                             key={skill}
-                            className="inline-flex items-center rounded-full border border-[var(--border-input)] bg-[var(--bg-secondary)] px-2.5 py-0.5 text-xs font-medium text-[var(--text-secondary)]"
+                            className="inline-flex items-center rounded-full bg-orange-500/8 px-2.5 py-0.5 text-xs font-medium text-orange-400/70 border border-orange-500/15"
                           >
                             {skill}
                           </span>
@@ -371,13 +371,13 @@ export default function JobListings() {
                         percentage={job.matchPercentage}
                       />
                     ) : (
-                      <span className="text-xs text-[var(--text-muted)]">
+                      <span className="text-xs text-gray-400">
                         Not calculated
                       </span>
                     )}
                   </div>
                 </div>
-                <div className="mt-3 flex items-center justify-between border-t border-[var(--border-subtle)] pt-3">
+                <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
                   {!statusFetchFailed && (
                     <ApplicationStatusBadge
                       applied={appliedJobIds.has(job.id)}

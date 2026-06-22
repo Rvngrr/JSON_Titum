@@ -260,7 +260,7 @@ export default function JobDetail({ jobId }: JobDetailProps) {
     return (
       <article aria-label="Job detail">
         <div className="flex items-center justify-center py-12">
-          <div className="flex items-center gap-2 text-gray-500">
+          <div className="flex items-center gap-2 text-[var(--text-muted)]">
             <svg
               className="h-5 w-5 animate-spin"
               viewBox="0 0 24 24"
@@ -291,8 +291,8 @@ export default function JobDetail({ jobId }: JobDetailProps) {
   if (error) {
     return (
       <article aria-label="Job detail">
-        <div className="rounded-md bg-red-50 p-4">
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="rounded-md bg-rose-500/10 p-4">
+          <p className="text-sm text-rose-400">{error}</p>
         </div>
         <div className="mt-4">
           <Link
@@ -335,14 +335,14 @@ export default function JobDetail({ jobId }: JobDetailProps) {
           {adjacentJobs.prevId ? (
             <Link
               href={`/applicant/jobs/${adjacentJobs.prevId}`}
-              className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+              className="inline-flex items-center rounded-md border border-cyan-500/20 bg-[var(--bg-card-solid)] px-3 py-1.5 text-sm font-medium text-[var(--text-secondary)] shadow-sm hover:bg-[var(--sidebar-hover)]"
               aria-label="Previous job"
             >
               ← Prev
             </Link>
           ) : (
             <span
-              className="inline-flex items-center rounded-md border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-400"
+              className="inline-flex items-center rounded-md border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-3 py-1.5 text-sm font-medium text-[var(--text-muted)]"
               aria-disabled="true"
             >
               ← Prev
@@ -352,14 +352,14 @@ export default function JobDetail({ jobId }: JobDetailProps) {
           {adjacentJobs.nextId ? (
             <Link
               href={`/applicant/jobs/${adjacentJobs.nextId}`}
-              className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+              className="inline-flex items-center rounded-md border border-cyan-500/20 bg-[var(--bg-card-solid)] px-3 py-1.5 text-sm font-medium text-[var(--text-secondary)] shadow-sm hover:bg-[var(--sidebar-hover)]"
               aria-label="Next job"
             >
               Next →
             </Link>
           ) : (
             <span
-              className="inline-flex items-center rounded-md border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-400"
+              className="inline-flex items-center rounded-md border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-3 py-1.5 text-sm font-medium text-[var(--text-muted)]"
               aria-disabled="true"
             >
               Next →
@@ -369,26 +369,26 @@ export default function JobDetail({ jobId }: JobDetailProps) {
       </nav>
 
       {/* Job Header with Match Percentage */}
-      <header className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+      <header className="mb-6 rounded-xl border border-cyan-500/30 bg-[var(--bg-card-solid)] p-6 shadow-sm shadow-cyan-500/5">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900">{job.title}</h1>
+              <h1 className="text-2xl font-bold text-[var(--text-primary)]">{job.title}</h1>
               <ApplicationStatusBadge applied={hasApplied} applicationStatus={applicationStatus} />
             </div>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-[var(--text-muted)]">
               Posted {new Date(job.created_at).toLocaleDateString()}
             </p>
           </div>
           <div className="ml-4 flex flex-col items-end gap-3">
             <div className="flex flex-col items-end">
-              <span className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+              <span className="mb-1 text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">
                 Your Match
               </span>
               {matchResult ? (
                 <MatchPercentageBadge percentage={matchResult.match_percentage} />
               ) : (
-                <span className="text-sm text-gray-400">Not calculated</span>
+                <span className="text-sm text-[var(--text-muted)]">Not calculated</span>
               )}
             </div>
             <ApplyButton
@@ -410,17 +410,17 @@ export default function JobDetail({ jobId }: JobDetailProps) {
       </header>
 
       {/* Job Description */}
-      <section className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-3 text-lg font-semibold text-gray-900">
+      <section className="mb-6 rounded-xl border border-cyan-500/30 bg-[var(--bg-card-solid)] p-6 shadow-sm shadow-cyan-500/5">
+        <h2 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">
           Description
         </h2>
-        <p className="whitespace-pre-wrap text-gray-700">{job.description}</p>
+        <p className="whitespace-pre-wrap text-[var(--text-secondary)]">{job.description}</p>
       </section>
 
       {/* Required Skills */}
       {requiredSkillsList.length > 0 && (
-        <section className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-lg font-semibold text-gray-900">
+        <section className="mb-6 rounded-xl border border-cyan-500/30 bg-[var(--bg-card-solid)] p-6 shadow-sm shadow-cyan-500/5">
+          <h2 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">
             Required Skills
           </h2>
           <ul className="flex flex-wrap gap-2" role="list">
@@ -433,8 +433,8 @@ export default function JobDetail({ jobId }: JobDetailProps) {
                   key={skill.id}
                   className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
                     isMatched
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
+                      ? "bg-green-500/15 text-green-300"
+                      : "bg-rose-500/15 text-rose-300"
                   }`}
                 >
                   {skill.skill_name}
@@ -461,8 +461,8 @@ export default function JobDetail({ jobId }: JobDetailProps) {
 
       {/* Preferred Skills */}
       {preferredSkillsList.length > 0 && (
-        <section className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-lg font-semibold text-gray-900">
+        <section className="mb-6 rounded-xl border border-cyan-500/30 bg-[var(--bg-card-solid)] p-6 shadow-sm shadow-cyan-500/5">
+          <h2 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">
             Preferred Skills
           </h2>
           <ul className="flex flex-wrap gap-2" role="list">
@@ -475,8 +475,8 @@ export default function JobDetail({ jobId }: JobDetailProps) {
                   key={skill.id}
                   className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
                     isMatched
-                      ? "bg-green-100 text-green-800"
-                      : "bg-yellow-100 text-yellow-800"
+                      ? "bg-green-500/15 text-green-300"
+                      : "bg-yellow-500/15 text-yellow-300"
                   }`}
                 >
                   {skill.skill_name}
@@ -503,11 +503,11 @@ export default function JobDetail({ jobId }: JobDetailProps) {
 
       {/* Qualifications */}
       {job.qualifications && (
-        <section className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-lg font-semibold text-gray-900">
+        <section className="mb-6 rounded-xl border border-cyan-500/30 bg-[var(--bg-card-solid)] p-6 shadow-sm shadow-cyan-500/5">
+          <h2 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">
             Qualifications
           </h2>
-          <p className="whitespace-pre-wrap text-gray-700">
+          <p className="whitespace-pre-wrap text-[var(--text-secondary)]">
             {job.qualifications}
           </p>
         </section>
@@ -515,11 +515,11 @@ export default function JobDetail({ jobId }: JobDetailProps) {
 
       {/* ATS Compatibility Score */}
       {atsLoading && (
-        <section className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-lg font-semibold text-gray-900">
+        <section className="mb-6 rounded-xl border border-cyan-500/30 bg-[var(--bg-card-solid)] p-6 shadow-sm shadow-cyan-500/5">
+          <h2 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">
             ATS Compatibility Score
           </h2>
-          <div className="flex items-center gap-2 text-gray-500">
+          <div className="flex items-center gap-2 text-[var(--text-muted)]">
             <svg
               className="h-4 w-4 animate-spin"
               viewBox="0 0 24 24"
@@ -545,8 +545,8 @@ export default function JobDetail({ jobId }: JobDetailProps) {
         </section>
       )}
       {!atsLoading && atsScore && (
-        <section className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-lg font-semibold text-gray-900">
+        <section className="mb-6 rounded-xl border border-cyan-500/30 bg-[var(--bg-card-solid)] p-6 shadow-sm shadow-cyan-500/5">
+          <h2 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">
             ATS Compatibility Score
           </h2>
 
@@ -559,12 +559,12 @@ export default function JobDetail({ jobId }: JobDetailProps) {
                     ? "text-green-600"
                     : atsScore.score >= 60
                     ? "text-yellow-600"
-                    : "text-red-600"
+                    : "text-rose-400"
                 }`}
               >
                 {atsScore.score}
               </span>
-              <span className="mb-1 text-sm text-gray-500">/ 100</span>
+              <span className="mb-1 text-sm text-[var(--text-muted)]">/ 100</span>
             </div>
             <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-gray-200">
               <div
@@ -573,13 +573,13 @@ export default function JobDetail({ jobId }: JobDetailProps) {
                     ? "bg-green-500"
                     : atsScore.score >= 60
                     ? "bg-yellow-500"
-                    : "bg-red-500"
+                    : "bg-rose-500/100"
                 }`}
                 style={{ width: `${atsScore.score}%` }}
               />
             </div>
             {atsScore.analysisSource === "local" && (
-              <p className="mt-2 text-xs text-gray-500 italic">
+              <p className="mt-2 text-xs text-[var(--text-muted)] italic">
                 Score calculated using basic matching
               </p>
             )}
@@ -588,7 +588,7 @@ export default function JobDetail({ jobId }: JobDetailProps) {
           {/* Matched Keywords */}
           {atsScore.matchedKeywords.length > 0 && (
             <div className="mb-4">
-              <h3 className="mb-2 text-sm font-medium text-gray-700">
+              <h3 className="mb-2 text-sm font-medium text-[var(--text-secondary)]">
                 Matched Keywords
               </h3>
               <div className="flex flex-wrap gap-2">
@@ -597,9 +597,9 @@ export default function JobDetail({ jobId }: JobDetailProps) {
                     key={idx}
                     className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                       kw.matchType === "exact"
-                        ? "bg-green-100 text-green-800"
+                        ? "bg-green-500/15 text-green-300"
                         : kw.matchType === "synonym"
-                        ? "bg-blue-100 text-blue-800"
+                        ? "bg-cyan-500/15 text-cyan-300"
                         : "bg-purple-100 text-purple-800"
                     }`}
                   >
@@ -614,14 +614,14 @@ export default function JobDetail({ jobId }: JobDetailProps) {
           {/* Missing Keywords */}
           {atsScore.missingKeywords.length > 0 && (
             <div className="mb-4">
-              <h3 className="mb-2 text-sm font-medium text-gray-700">
+              <h3 className="mb-2 text-sm font-medium text-[var(--text-secondary)]">
                 Missing Keywords
               </h3>
               <div className="flex flex-wrap gap-2">
                 {atsScore.missingKeywords.map((kw, idx) => (
                   <span
                     key={idx}
-                    className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800"
+                    className="inline-flex items-center rounded-full bg-rose-500/15 px-2.5 py-0.5 text-xs font-medium text-rose-300"
                   >
                     {kw}
                   </span>
@@ -633,7 +633,7 @@ export default function JobDetail({ jobId }: JobDetailProps) {
           {/* Suggestions ordered by impact */}
           {atsScore.suggestions.length > 0 && (
             <div>
-              <h3 className="mb-2 text-sm font-medium text-gray-700">
+              <h3 className="mb-2 text-sm font-medium text-[var(--text-secondary)]">
                 Suggestions
               </h3>
               <ul className="space-y-2">
@@ -645,12 +645,12 @@ export default function JobDetail({ jobId }: JobDetailProps) {
                   .map((suggestion, idx) => (
                     <li
                       key={idx}
-                      className="flex items-start gap-2 rounded-md border border-gray-100 bg-gray-50 p-3"
+                      className="flex items-start gap-2 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-3"
                     >
                       <span
                         className={`mt-0.5 inline-block h-2 w-2 flex-shrink-0 rounded-full ${
                           suggestion.impact === "high"
-                            ? "bg-red-500"
+                            ? "bg-rose-500/100"
                             : suggestion.impact === "medium"
                             ? "bg-yellow-500"
                             : "bg-gray-400"
@@ -661,7 +661,7 @@ export default function JobDetail({ jobId }: JobDetailProps) {
                         <p className="text-sm text-gray-800">
                           {suggestion.suggestion}
                         </p>
-                        <p className="mt-0.5 text-xs text-gray-500">
+                        <p className="mt-0.5 text-xs text-[var(--text-muted)]">
                           Add &quot;{suggestion.keyword}&quot; to{" "}
                           {suggestion.section}
                         </p>
@@ -681,7 +681,7 @@ export default function JobDetail({ jobId }: JobDetailProps) {
         matchResult.missing_skills &&
         matchResult.missing_skills.length > 0 &&
         matchResult.missing_skills.length <= 5 && (
-          <section className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-5 shadow-sm">
+          <section className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 p-5 shadow-sm">
             <div className="flex items-center gap-3">
               <span className="text-3xl" role="img" aria-label="Hidden Gem">
                 🔥
@@ -690,7 +690,7 @@ export default function JobDetail({ jobId }: JobDetailProps) {
                 <h2 className="text-lg font-semibold text-amber-900">
                   Hidden Gem
                 </h2>
-                <p className="text-sm text-amber-800">
+                <p className="text-sm text-amber-300">
                   Only {matchResult.missing_skills.length} easy skill
                   {matchResult.missing_skills.length === 1 ? "" : "s"} away!
                 </p>
@@ -701,11 +701,11 @@ export default function JobDetail({ jobId }: JobDetailProps) {
 
       {/* Skill ROI Analysis */}
       {skillROILoading && (
-        <section className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-lg font-semibold text-gray-900">
+        <section className="mb-6 rounded-xl border border-cyan-500/30 bg-[var(--bg-card-solid)] p-6 shadow-sm shadow-cyan-500/5">
+          <h2 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">
             Skill ROI Analysis
           </h2>
-          <div className="flex items-center gap-2 text-gray-500">
+          <div className="flex items-center gap-2 text-[var(--text-muted)]">
             <svg
               className="h-4 w-4 animate-spin"
               viewBox="0 0 24 24"
@@ -731,11 +731,11 @@ export default function JobDetail({ jobId }: JobDetailProps) {
         </section>
       )}
       {!skillROILoading && skillROI.length > 0 && (
-        <section className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-lg font-semibold text-gray-900">
+        <section className="mb-6 rounded-xl border border-cyan-500/30 bg-[var(--bg-card-solid)] p-6 shadow-sm shadow-cyan-500/5">
+          <h2 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">
             Skill ROI Analysis
           </h2>
-          <p className="mb-3 text-sm text-gray-500">
+          <p className="mb-3 text-sm text-[var(--text-muted)]">
             Top skills to learn for the biggest match improvement
           </p>
           <ul className="space-y-3">
@@ -745,10 +745,10 @@ export default function JobDetail({ jobId }: JobDetailProps) {
               .map((skill, idx) => (
                 <li
                   key={idx}
-                  className="flex items-center justify-between rounded-md border border-gray-100 bg-gray-50 px-4 py-3"
+                  className="flex items-center justify-between rounded-md border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-4 py-3"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-[var(--text-primary)]">
                       Learn {skill.skillName}
                     </span>
                   </div>
@@ -762,7 +762,7 @@ export default function JobDetail({ jobId }: JobDetailProps) {
       )}
 
       {/* AI Recommendations */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-cyan-500/30 bg-[var(--bg-card-solid)] p-6 shadow-sm shadow-cyan-500/5">
         <RecommendationsList
           recommendations={recommendations}
           matchPercentage={matchResult?.match_percentage ?? null}
@@ -779,7 +779,7 @@ export default function JobDetail({ jobId }: JobDetailProps) {
         {adjacentJobs.prevId ? (
           <Link
             href={`/applicant/jobs/${adjacentJobs.prevId}`}
-            className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+            className="inline-flex items-center rounded-md border border-cyan-500/20 bg-[var(--bg-card-solid)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] shadow-sm hover:bg-[var(--sidebar-hover)]"
           >
             ← Previous Job
           </Link>
@@ -790,7 +790,7 @@ export default function JobDetail({ jobId }: JobDetailProps) {
         {adjacentJobs.nextId ? (
           <Link
             href={`/applicant/jobs/${adjacentJobs.nextId}`}
-            className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+            className="inline-flex items-center rounded-md border border-cyan-500/20 bg-[var(--bg-card-solid)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] shadow-sm hover:bg-[var(--sidebar-hover)]"
           >
             Next Job →
           </Link>

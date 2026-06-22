@@ -70,7 +70,7 @@ export default function ImportJobsPanel() {
   };
 
   return (
-    <section aria-labelledby="import-jobs-heading" className="glass-card p-6">
+    <section aria-labelledby="import-jobs-heading" className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-solid)] p-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 id="import-jobs-heading" className="text-lg font-semibold text-[var(--text-primary)]">
@@ -86,7 +86,7 @@ export default function ImportJobsPanel() {
       {lastCacheTimestamp && (
         <p className="mt-3 text-sm text-[var(--text-muted)]">
           Last fetched:{" "}
-          <time dateTime={lastCacheTimestamp} className="font-medium text-[var(--text-primary)]">
+          <time dateTime={lastCacheTimestamp} className="font-medium text-[var(--text-secondary)]">
             {formatTimestamp(lastCacheTimestamp)}
           </time>
         </p>
@@ -98,7 +98,7 @@ export default function ImportJobsPanel() {
           type="button"
           onClick={() => handleImport(false)}
           disabled={importing}
-          className="inline-flex items-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-[var(--accent-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           aria-busy={importing}
         >
           {importing && (
@@ -131,7 +131,7 @@ export default function ImportJobsPanel() {
           type="button"
           onClick={() => handleImport(true)}
           disabled={importing}
-          className="inline-flex items-center gap-2 rounded-xl border border-[var(--border-input)] bg-[var(--bg-card-solid)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] shadow-sm hover:bg-[var(--sidebar-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           aria-busy={importing}
         >
           {importing && (
@@ -192,13 +192,13 @@ export default function ImportJobsPanel() {
       {/* Success message */}
       {result && result.success && (
         <div
-          className="mt-4 rounded-xl bg-[var(--success-bg)] p-4"
+          className="mt-4 rounded-md bg-green-500/10 border border-green-500/20 p-4"
           role="alert"
           aria-live="polite"
         >
           <div className="flex">
             <svg
-              className="h-5 w-5 shrink-0 text-[var(--success)]"
+              className="h-5 w-5 shrink-0 text-green-400"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
               fill="currentColor"
@@ -211,8 +211,8 @@ export default function ImportJobsPanel() {
               />
             </svg>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-[var(--success-text)]">Import Successful</h3>
-              <p className="mt-1 text-sm text-[var(--success-text)]">
+              <h3 className="text-sm font-medium text-green-300">Import Successful</h3>
+              <p className="mt-1 text-sm text-green-300">
                 {result.importedCount} job{result.importedCount !== 1 ? "s" : ""} imported,{" "}
                 {result.skippedDuplicates} skipped (already exists).
                 {result.cacheUsed && " Used cached data."}
@@ -225,13 +225,13 @@ export default function ImportJobsPanel() {
       {/* Error message */}
       {error && (
         <div
-          className="mt-4 rounded-xl bg-[var(--error-bg)] p-4"
+          className="mt-4 rounded-md bg-rose-500/10 border border-rose-500/20 p-4"
           role="alert"
           aria-live="assertive"
         >
           <div className="flex">
             <svg
-              className="h-5 w-5 shrink-0 text-[var(--error)]"
+              className="h-5 w-5 shrink-0 text-red-400"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
               fill="currentColor"
@@ -244,8 +244,8 @@ export default function ImportJobsPanel() {
               />
             </svg>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-[var(--error-text)]">Import Failed</h3>
-              <p className="mt-1 text-sm text-[var(--error-text)]">{error}</p>
+              <h3 className="text-sm font-medium text-rose-300">Import Failed</h3>
+              <p className="mt-1 text-sm text-rose-300">{error}</p>
             </div>
           </div>
         </div>
@@ -254,13 +254,13 @@ export default function ImportJobsPanel() {
       {/* Warning toast for LLM fallback */}
       {warningMessage && (
         <div
-          className="mt-4 rounded-xl bg-[var(--warning-bg)] p-4"
+          className="mt-4 rounded-md bg-amber-500/10 border border-amber-500/20 p-4"
           role="alert"
           aria-live="polite"
         >
           <div className="flex">
             <svg
-              className="h-5 w-5 shrink-0 text-[var(--warning)]"
+              className="h-5 w-5 shrink-0 text-yellow-400"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
               fill="currentColor"
@@ -273,8 +273,8 @@ export default function ImportJobsPanel() {
               />
             </svg>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-[var(--warning-text)]">Warning</h3>
-              <p className="mt-1 text-sm text-[var(--warning-text)]">{warningMessage}</p>
+              <h3 className="text-sm font-medium text-amber-300">Warning</h3>
+              <p className="mt-1 text-sm text-amber-300">{warningMessage}</p>
             </div>
           </div>
         </div>

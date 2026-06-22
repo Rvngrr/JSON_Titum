@@ -50,10 +50,10 @@ export default function RoleSelector({
             value="hr_user"
             checked={value === "hr_user"}
             onChange={() => onChange("hr_user")}
-            aria-label="HR User role"
+            aria-label="Job Curator role"
             className="h-4 w-4 accent-[var(--accent)]"
           />
-          <span className="text-sm font-medium">HR User</span>
+          <span className="text-sm font-medium">Job Curator</span>
         </label>
       </div>
     </fieldset>

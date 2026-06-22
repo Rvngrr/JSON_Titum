@@ -18,11 +18,11 @@ export default function RecommendationsList({
   if (loading) {
     return (
       <section aria-label="AI recommendations">
-        <h2 className="mb-4 text-xl font-semibold text-gray-900">
+        <h2 className="mb-4 text-xl font-semibold text-white">
           AI Improvement Suggestions
         </h2>
-        <div className="flex items-center justify-center rounded-lg border border-gray-200 bg-white p-6">
-          <div className="flex items-center gap-2 text-gray-500">
+        <div className="flex items-center justify-center rounded-lg border border-cyan-500/20 bg-[var(--bg-card-solid)] p-6">
+          <div className="flex items-center gap-2 text-[var(--text-muted)]">
             <svg
               className="h-5 w-5 animate-spin"
               viewBox="0 0 24 24"
@@ -53,11 +53,11 @@ export default function RecommendationsList({
   if (error) {
     return (
       <section aria-label="AI recommendations">
-        <h2 className="mb-4 text-xl font-semibold text-gray-900">
+        <h2 className="mb-4 text-xl font-semibold text-white">
           AI Improvement Suggestions
         </h2>
-        <div className="rounded-md bg-red-50 p-4">
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="rounded-md bg-rose-500/10 p-4">
+          <p className="text-sm text-rose-400">{error}</p>
         </div>
       </section>
     );
@@ -67,15 +67,15 @@ export default function RecommendationsList({
   if (matchPercentage === 100) {
     return (
       <section aria-label="AI recommendations">
-        <h2 className="mb-4 text-xl font-semibold text-gray-900">
+        <h2 className="mb-4 text-xl font-semibold text-white">
           AI Improvement Suggestions
         </h2>
-        <div className="rounded-lg border border-green-200 bg-green-50 p-6 text-center">
+        <div className="rounded-lg border border-green-500/20 bg-green-500/5 p-6 text-center">
           <div className="mb-2 text-2xl">🎉</div>
-          <p className="font-medium text-green-800">
+          <p className="font-medium text-green-300">
             Your profile fully matches the job requirements!
           </p>
-          <p className="mt-1 text-sm text-green-600">
+          <p className="mt-1 text-sm text-green-400">
             No additional skills are needed for this position.
           </p>
         </div>
@@ -86,11 +86,11 @@ export default function RecommendationsList({
   if (recommendations.length === 0) {
     return (
       <section aria-label="AI recommendations">
-        <h2 className="mb-4 text-xl font-semibold text-gray-900">
+        <h2 className="mb-4 text-xl font-semibold text-white">
           AI Improvement Suggestions
         </h2>
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
-          <p className="text-sm text-gray-600">
+        <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-6 text-center">
+          <p className="text-sm text-[var(--text-secondary)]">
             No recommendations available yet.
           </p>
         </div>
@@ -110,7 +110,7 @@ export default function RecommendationsList({
 
   return (
     <section aria-label="AI recommendations">
-      <h2 className="mb-4 text-xl font-semibold text-gray-900">
+      <h2 className="mb-4 text-xl font-semibold text-white">
         AI Improvement Suggestions
       </h2>
 
@@ -118,26 +118,26 @@ export default function RecommendationsList({
         {/* Skills to Add */}
         {skillsToAdd.length > 0 && (
           <div>
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-orange-700">
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-amber-400">
               Skills to Add
             </h3>
             <ul className="space-y-3" role="list" aria-label="Skills to add">
               {skillsToAdd.map((rec) => (
                 <li
                   key={rec.id}
-                  className="rounded-lg border border-orange-100 bg-orange-50 p-4"
+                  className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">
+                      <p className="font-medium text-[var(--text-primary)]">
                         {rec.skill_name}
                       </p>
-                      <p className="mt-1 text-sm text-gray-600">
+                      <p className="mt-1 text-sm text-[var(--text-secondary)]">
                         {rec.description}
                       </p>
                     </div>
                     <span
-                      className="ml-3 inline-flex items-center rounded-full bg-orange-200 px-2.5 py-0.5 text-xs font-medium text-orange-800"
+                      className="ml-3 inline-flex items-center rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-medium text-amber-300"
                       aria-label={`Impact score: ${rec.impact_score} out of 10`}
                     >
                       Impact: {rec.impact_score}/10
@@ -152,26 +152,26 @@ export default function RecommendationsList({
         {/* Skills to Improve */}
         {skillsToImprove.length > 0 && (
           <div>
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-blue-700">
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-cyan-400">
               Skills to Improve
             </h3>
             <ul className="space-y-3" role="list" aria-label="Skills to improve">
               {skillsToImprove.map((rec) => (
                 <li
                   key={rec.id}
-                  className="rounded-lg border border-blue-100 bg-blue-50 p-4"
+                  className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-4"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">
+                      <p className="font-medium text-[var(--text-primary)]">
                         {rec.skill_name}
                       </p>
-                      <p className="mt-1 text-sm text-gray-600">
+                      <p className="mt-1 text-sm text-[var(--text-secondary)]">
                         {rec.description}
                       </p>
                     </div>
                     <span
-                      className="ml-3 inline-flex items-center rounded-full bg-blue-200 px-2.5 py-0.5 text-xs font-medium text-blue-800"
+                      className="ml-3 inline-flex items-center rounded-full bg-cyan-500/20 px-2.5 py-0.5 text-xs font-medium text-cyan-300"
                       aria-label={`Impact score: ${rec.impact_score} out of 10`}
                     >
                       Impact: {rec.impact_score}/10

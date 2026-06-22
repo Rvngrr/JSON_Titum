@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { JobDescription } from "@/types";
@@ -9,7 +9,10 @@ import LoadingSpinner from "@/components/shared/LoadingSpinner";
 interface ExtendedJobDescription extends JobDescription {
   external_job_id?: string | null;
   source?: string | null;
+  applicationCount?: number;
 }
+
+type StatusFilter = "all" | "published" | "draft" | "closed";
 
 export default function JobDescriptionList() {
   const [jobs, setJobs] = useState<ExtendedJobDescription[]>([]);
@@ -18,6 +21,7 @@ export default function JobDescriptionList() {
   const [actionInProgressId, setActionInProgressId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   const supabase = createClient();
 
@@ -33,7 +37,21 @@ export default function JobDescriptionList() {
     if (fetchError) {
       setError("Failed to load job descriptions. Please try again.");
     } else {
-      setJobs(data as ExtendedJobDescription[]);
+      const jobList = (data as ExtendedJobDescription[]) ?? [];
+
+      // Fetch application counts
+      const { data: appCounts } = await supabase
+        .from("applications")
+        .select("job_description_id");
+
+      const countMap = new Map<string, number>();
+      if (appCounts) {
+        for (const app of appCounts) {
+          countMap.set(app.job_description_id, (countMap.get(app.job_description_id) || 0) + 1);
+        }
+      }
+
+      setJobs(jobList.map((job) => ({ ...job, applicationCount: countMap.get(job.id) || 0 })));
     }
 
     setLoading(false);
@@ -169,6 +187,18 @@ export default function JobDescriptionList() {
     });
   };
 
+  const filteredJobs = useMemo(() => {
+    if (statusFilter === "all") return jobs;
+    return jobs.filter((j) => j.status === statusFilter);
+  }, [jobs, statusFilter]);
+
+  const statusCounts = useMemo(() => ({
+    all: jobs.length,
+    published: jobs.filter((j) => j.status === "published").length,
+    draft: jobs.filter((j) => j.status === "draft").length,
+    closed: jobs.filter((j) => j.status === "closed").length,
+  }), [jobs]);
+
   if (loading) {
     return (
       <section aria-label="Job descriptions" className="flex justify-center py-12">
@@ -206,138 +236,102 @@ export default function JobDescriptionList() {
   return (
     <section aria-label="Job descriptions">
       {error && (
-        <div role="alert" aria-live="assertive" className="mb-4 rounded-xl bg-[var(--error-bg)] p-3 text-sm text-[var(--error-text)]">
+        <div role="alert" aria-live="assertive" className="mb-4 rounded-xl bg-rose-500/10 p-3 text-sm text-rose-300 border border-rose-500/20">
           {error}
         </div>
       )}
 
       {successMessage && (
-        <div role="status" aria-live="polite" className="mb-4 rounded-xl bg-[var(--success-bg)] p-3 text-sm text-[var(--success-text)]">
+        <div role="status" aria-live="polite" className="mb-4 rounded-xl bg-green-500/10 p-3 text-sm text-green-300 border border-green-500/20">
           {successMessage}
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl">
-        <table className="min-w-full divide-y divide-[var(--border-subtle)]">
-          <thead className="bg-[var(--bg-secondary)]">
-            <tr>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]"
-              >
-                Title
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]"
-              >
-                Status
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]"
-              >
-                Source
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]"
-              >
-                Created
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]"
-              >
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--border-subtle)] bg-[var(--bg-card-solid)]">
-            {jobs.map((job) => (
-              <tr key={job.id} className="hover:bg-[var(--sidebar-hover)] transition-colors">
-                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-[var(--text-primary)]">
-                  {job.title}
-                </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm">
-                  <span
-                    className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold leading-5 ${getStatusBadgeClasses(job.status)}`}
-                  >
-                    {job.status}
-                  </span>
-                </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm">
-                  {getSourceBadge(job)}
-                </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-[var(--text-muted)]">
-                  {formatDate(job.created_at)}
-                </td>
-                <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
-                  <div className="flex items-center justify-end gap-2">
-                    {/* Publish action - only for draft manual jobs */}
-                    {job.status === "draft" && isManualJob(job) && (
-                      <button
-                        type="button"
-                        onClick={() => handlePublish(job.id, job.title)}
-                        disabled={actionInProgressId === job.id}
-                        className="font-medium text-[var(--success)] hover:text-[var(--success-text)] transition-colors disabled:opacity-50"
-                        aria-label={`Publish ${job.title}`}
-                      >
-                        {actionInProgressId === job.id ? "Publishing..." : "Publish"}
-                      </button>
-                    )}
+      {/* Filter Tabs */}
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        {(["all", "published", "draft", "closed"] as StatusFilter[]).map((filter) => (
+          <button
+            key={filter}
+            type="button"
+            onClick={() => setStatusFilter(filter)}
+            className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
+              statusFilter === filter
+                ? "bg-[var(--accent)] text-white"
+                : "bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            }`}
+          >
+            {filter.charAt(0).toUpperCase() + filter.slice(1)} ({statusCounts[filter]})
+          </button>
+        ))}
+      </div>
 
-                    {/* Rankings link */}
-                    <Link
-                      href={`/hr/jobs/${job.id}/rankings`}
-                      className="font-medium text-indigo-600 hover:text-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                      aria-label={`View rankings for ${job.title}`}
-                    >
-                      Rankings
-                    </Link>
+      {/* Job rows */}
+      <div className="space-y-2">
+        {filteredJobs.map((job) => (
+          <div
+            key={job.id}
+            className="flex items-center gap-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-solid)] px-4 py-3.5 transition-all hover:border-cyan-500/30"
+          >
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-[var(--text-primary)] truncate">{job.title}</p>
+                <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${getStatusBadgeClasses(job.status)}`}>
+                  {job.status}
+                </span>
+              </div>
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                {formatDate(job.created_at)}
+                {job.source && <span> · via {job.source}</span>}
+              </p>
+            </div>
 
-                    {/* Edit action - only for manual jobs */}
-                    {isManualJob(job) && (
-                      <Link
-                        href={`/hr/jobs/${job.id}/edit`}
-                        className="font-medium text-blue-600 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                        aria-label={`Edit ${job.title}`}
-                      >
-                        Edit
-                      </Link>
-                    )}
+            {/* Applicant count */}
+            <Link
+              href="/hr/applicants"
+              className="flex-shrink-0 rounded-full bg-cyan-500/10 px-3 py-1 text-xs font-medium text-cyan-300 border border-cyan-500/20 hover:bg-cyan-500/20 transition-colors"
+            >
+              {job.applicationCount ?? 0} applicant{(job.applicationCount ?? 0) !== 1 ? "s" : ""}
+            </Link>
 
-                    {/* Close action - only for published manual jobs */}
-                    {job.status === "published" && isManualJob(job) && (
-                      <button
-                        type="button"
-                        onClick={() => handleClose(job.id, job.title)}
-                        disabled={actionInProgressId === job.id}
-                        className="font-medium text-orange-600 hover:text-orange-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50"
-                        aria-label={`Close ${job.title}`}
-                      >
-                        {actionInProgressId === job.id ? "Closing..." : "Close"}
-                      </button>
-                    )}
-
-                    {/* Delete action - only for manual jobs */}
-                    {isManualJob(job) && (
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(job.id, job.title)}
-                        disabled={deletingId === job.id}
-                        className="font-medium text-red-600 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50"
-                        aria-label={`Delete ${job.title}`}
-                      >
-                        {deletingId === job.id ? "Deleting..." : "Delete"}
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            {/* Actions dropdown */}
+            {isManualJob(job) && (
+              <div className="relative flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    const menu = e.currentTarget.nextElementSibling as HTMLElement;
+                    menu.classList.toggle("hidden");
+                  }}
+                  onBlur={(e) => {
+                    const menu = e.currentTarget.nextElementSibling as HTMLElement;
+                    setTimeout(() => menu.classList.add("hidden"), 150);
+                  }}
+                  className="rounded-lg px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all"
+                >
+                  Actions
+                </button>
+                <div className="hidden absolute right-0 top-full mt-1 z-20 w-32 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-solid)] py-1 shadow-lg">
+                  {job.status === "draft" && (
+                    <button type="button" onClick={() => handlePublish(job.id, job.title)} disabled={actionInProgressId === job.id} className="w-full text-left px-4 py-2 text-xs text-green-400 hover:bg-[var(--sidebar-hover)] disabled:opacity-50">
+                      Publish
+                    </button>
+                  )}
+                  {job.status === "published" && (
+                    <button type="button" onClick={() => handleClose(job.id, job.title)} disabled={actionInProgressId === job.id} className="w-full text-left px-4 py-2 text-xs text-orange-400 hover:bg-[var(--sidebar-hover)] disabled:opacity-50">
+                      Close
+                    </button>
+                  )}
+                  <Link href={`/hr/jobs/${job.id}/edit`} className="block px-4 py-2 text-xs text-[var(--accent)] hover:bg-[var(--sidebar-hover)]">
+                    Edit
+                  </Link>
+                  <button type="button" onClick={() => handleDelete(job.id, job.title)} disabled={deletingId === job.id} className="w-full text-left px-4 py-2 text-xs text-rose-400 hover:bg-[var(--sidebar-hover)] disabled:opacity-50">
+                    Delete
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </section>
   );
