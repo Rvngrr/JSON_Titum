@@ -162,12 +162,12 @@ export default function ApplicantLayout({
       </AnimatePresence>
 
       {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 sidebar-glass p-6 md:block">
+      <aside className="fixed top-0 left-0 hidden h-screen w-64 shrink-0 sidebar-glass p-6 md:block z-20">
         <nav className="h-full" aria-label="Applicant dashboard navigation">{navContent}</nav>
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 pt-14 md:pt-0">
+      <div className="flex-1 pt-14 md:pt-0 md:ml-64">
         <ErrorBoundary>{children}</ErrorBoundary>
       </div>
     </div>

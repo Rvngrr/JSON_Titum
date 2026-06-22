@@ -102,7 +102,7 @@ export default function HRLayout({
   );
 
   return (
-    <div className="flex min-h-screen bg-[var(--bg-secondary)] relative overflow-hidden">
+    <div className="flex min-h-screen bg-[var(--bg-secondary)] relative">
       <FloatingOrbs />
       {/* Mobile header */}
       <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-3 md:hidden sidebar-glass">
@@ -159,12 +159,12 @@ export default function HRLayout({
       </AnimatePresence>
 
       {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 sidebar-glass p-6 md:block">
+      <aside className="fixed top-0 left-0 hidden h-screen w-64 shrink-0 sidebar-glass p-6 md:block z-20">
         <nav className="h-full" aria-label="HR dashboard navigation">{navContent}</nav>
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 pt-14 md:pt-0">
+      <div className="flex-1 pt-14 md:pt-0 md:ml-64">
         <ErrorBoundary>{children}</ErrorBoundary>
       </div>
     </div>
