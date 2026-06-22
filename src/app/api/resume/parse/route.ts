@@ -89,52 +89,15 @@ export async function POST(request: Request) {
       console.log("[resume/parse] Step 3 done: Extracted", extractedSkills.length, "skills");
     }
 
-    // 3b. Extract full profile (projects, experience, certs, achievements)
-    console.log("[resume/parse] Step 3b: Extracting structured profile...");
-    let resumeProfile = await extractResumeProfile(rawText);
+    // 3b. Extract full profile (for response only — NOT auto-saved to profile sections)
+    // Users fill work experience, education, and certifications manually in My Profile
+    console.log("[resume/parse] Step 3b: Extracting structured profile for response...");
+    const resumeProfile = await extractResumeProfile(rawText);
     console.log("[resume/parse] Step 3b done:", resumeProfile.projects.length, "projects,", resumeProfile.experience.length, "experiences");
 
-    // 3c. If AI returned empty profile, use local fallback parser
-    if (resumeProfile.experience.length === 0 && resumeProfile.education.length === 0) {
-      console.log("[resume/parse] Step 3c: AI profile empty, using local fallback parser...");
-      const localProfile = extractProfileLocally(rawText);
-      if (localProfile.experience.length > 0) resumeProfile.experience = localProfile.experience;
-      if (localProfile.education.length > 0) resumeProfile.education = localProfile.education;
-      if (localProfile.certifications.length > 0) resumeProfile.certifications = localProfile.certifications;
-      if (localProfile.projects.length > 0) resumeProfile.projects = localProfile.projects;
-      if (localProfile.achievements.length > 0) resumeProfile.achievements = localProfile.achievements;
-      console.log("[resume/parse] Step 3c done: local fallback found", localProfile.education.length, "education,", localProfile.experience.length, "experience,", localProfile.certifications.length, "certifications");
-    }
-
-    // 4. Upsert skill_profile record for the user — include structured profile data
+    // 4. Upsert skill_profile record — only save resume file path and raw text
+    // Work experience, education, and certifications are entered manually by the user
     console.log("[resume/parse] Step 4: Upserting skill_profile for user:", user_id);
-
-    // Convert extracted profile into the database format
-    const workExperience = resumeProfile.experience.map((exp, idx) => ({
-      id: `resume-exp-${idx}`,
-      title: exp.title,
-      company: exp.organization,
-      industry: '',
-      startDate: exp.duration.split(' - ')[0]?.trim() || '',
-      endDate: exp.duration.split(' - ')[1]?.trim() || '',
-      isCurrent: exp.duration.toLowerCase().includes('present'),
-      description: exp.highlights.join('\n'),
-    }));
-
-    const education = resumeProfile.education.map((edu, idx) => ({
-      id: `resume-edu-${idx}`,
-      degree: edu.degree,
-      institution: edu.institution,
-      fieldOfStudy: '',
-      graduationYear: edu.year,
-    }));
-
-    const certifications = resumeProfile.certifications.map((cert, idx) => ({
-      id: `resume-cert-${idx}`,
-      name: cert,
-      issuer: '',
-      date: '',
-    }));
 
     const { data: skillProfile, error: upsertError } = await supabase
       .from("skill_profiles")
@@ -143,9 +106,6 @@ export async function POST(request: Request) {
           user_id,
           resume_file_path: file_path,
           raw_resume_text: rawText,
-          work_experience: workExperience.length > 0 ? workExperience : undefined,
-          education: education.length > 0 ? education : undefined,
-          certifications: certifications.length > 0 ? certifications : undefined,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "user_id" }
@@ -453,42 +413,70 @@ Extract ALL skills now. Be comprehensive.`;
  * Captures experience, projects (with tech & outcomes), certifications, and achievements.
  */
 async function extractResumeProfile(resumeText: string): Promise<ResumeProfile> {
-  const systemPrompt = `You are an expert resume analyst. Extract structured information from resumes with high accuracy. Always respond with valid JSON only.`;
+  const systemPrompt = `You are an expert resume analyst specializing in parsing structured information from resumes of all formats. You must correctly categorize information into the right sections — do NOT mix up experience with projects, or certifications with education. Always respond with valid JSON only.`;
 
-  const userPrompt = `Analyze this resume and extract the following structured data.
+  const userPrompt = `Carefully analyze this resume and extract structured data into the correct categories.
 
-IMPORTANT RULES:
-- For EXPERIENCE: extract job title, organization, duration (e.g., "2024 - 2025"), and 2-4 bullet-point highlights showing what they accomplished
-- For PROJECTS: extract project name, a one-line description, technologies used (as array), and the measurable outcome/result if mentioned
-- For CERTIFICATIONS: list all certifications, seminars, and training programs
-- For ACHIEVEMENTS: list awards, rankings (e.g., "6th Place in Hawk-a-thon"), metrics (e.g., "improved performance by 25%"), and notable accomplishments
-- For EDUCATION: extract degree, institution, and graduation year
+CRITICAL CATEGORIZATION RULES:
+1. EXPERIENCE = Paid jobs, internships, freelance work, or volunteer positions at ORGANIZATIONS. Must have: a role title, an organization/company name, and a time period.
+   - "Software Developer Intern at TechCorp (June 2024 - Aug 2024)" → EXPERIENCE
+   - "Freelance Web Developer (2023 - Present)" → EXPERIENCE
+   - DO NOT put personal projects here.
+
+2. PROJECTS = Self-initiated or academic projects that are NOT employment. They showcase skills but are not formal jobs.
+   - "Built a job matching platform using React and Python" → PROJECT
+   - "Capstone Project: AI Chatbot" → PROJECT
+   - Hackathon entries are PROJECTS (but the placing/award goes in ACHIEVEMENTS)
+
+3. EDUCATION = Formal degrees, diplomas, or academic programs at educational institutions.
+   - "BS Computer Science, University of the Philippines (2022-2026)" → EDUCATION
+   - "Senior High School, STI College (2020-2022)" → EDUCATION
+   - Short courses and bootcamps → CERTIFICATIONS (not education)
+
+4. CERTIFICATIONS = Certificates, online courses, seminars, training programs, bootcamps, workshops.
+   - "AWS Certified Cloud Practitioner" → CERTIFICATION
+   - "Google Data Analytics Certificate" → CERTIFICATION
+   - "Seminar on Cybersecurity (2024)" → CERTIFICATION
+   - "Python Bootcamp - Udemy" → CERTIFICATION
+
+5. ACHIEVEMENTS = Awards, rankings, competition results, metrics, recognitions.
+   - "6th Place in National Hackathon" → ACHIEVEMENT
+   - "Dean's Lister (2023-2024)" → ACHIEVEMENT
+   - "Improved system performance by 40%" → ACHIEVEMENT (also mention in relevant experience/project)
+
+EXTRACTION RULES:
+- For EXPERIENCE duration: Use format "Month Year - Month Year" or "Year - Year" or "Year - Present"
+- For EXPERIENCE highlights: Extract 2-4 specific accomplishments, not generic descriptions. Use action verbs.
+- For EDUCATION year: Use the graduation/expected graduation year only (e.g., "2026")
+- For PROJECTS technologies: List specific tools/frameworks used, not vague terms
+- If something is ambiguous, use this priority: Experience > Projects > Certifications
+- If a section has NO entries in the resume, return an EMPTY array — never fabricate data
 
 Return a JSON object with this EXACT structure:
 {
   "experience": [
     {
-      "title": "Job Title",
-      "organization": "Company/Org Name",
-      "duration": "Start - End",
-      "highlights": ["What they did 1", "What they did 2"]
+      "title": "Exact Job Title from Resume",
+      "organization": "Company/Organization Name",
+      "duration": "Start - End (e.g., June 2024 - August 2024)",
+      "highlights": ["Specific accomplishment 1", "Specific accomplishment 2"]
     }
   ],
   "projects": [
     {
       "name": "Project Name",
       "description": "One-line description of what it does",
-      "technologies": ["Tech1", "Tech2"],
-      "outcome": "Measurable result if mentioned (e.g., '90% accuracy', '25% improvement')"
+      "technologies": ["React", "Python", "PostgreSQL"],
+      "outcome": "Measurable result if mentioned"
     }
   ],
-  "certifications": ["Cert 1", "Cert 2"],
-  "achievements": ["Achievement 1", "Achievement 2"],
+  "certifications": ["Full certification/seminar name with issuer if available"],
+  "achievements": ["Full achievement description"],
   "education": [
     {
-      "degree": "Bachelor of Science in Computer Science",
-      "institution": "University Name",
-      "year": "2026"
+      "degree": "Full degree name (e.g., Bachelor of Science in Information Technology)",
+      "institution": "Full institution name",
+      "year": "Graduation year or expected year (e.g., 2026)"
     }
   ]
 }
@@ -496,7 +484,9 @@ Return a JSON object with this EXACT structure:
 RESUME TEXT:
 ---
 ${resumeText}
----`;
+---
+
+Extract NOW. Be thorough and categorize correctly. Do NOT skip any section that has data.`;
 
   try {
     const content = await callGemini(systemPrompt, userPrompt, { temperature: 0.1, maxTokens: 3000 });
