@@ -11,7 +11,6 @@ interface SkillROIItem {
 
 interface GapSummaryData {
   matchPercentage: number | null;
-  atsScore: number | null;
   missingRequiredSkills: string[];
   missingPreferredSkills: string[];
   topSkillsToLearn: SkillROIItem[];
@@ -64,6 +63,31 @@ export default function GapSummaryDialog({
     async function fetchGapData() {
       setLoading(true);
 
+      // If match percentage is not available, try to fetch/calculate it
+      let resolvedMatchPct = matchPercentage;
+      let resolvedMissingSkills = missingSkills;
+
+      if (resolvedMatchPct === null) {
+        try {
+          // Trigger match calculation for this job
+          const calcRes = await fetch("/api/match/calculate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ job_description_id: jobId }),
+          });
+          if (calcRes.ok) {
+            const calcData = await calcRes.json();
+            if (calcData.success && calcData.results?.length > 0) {
+              const result = calcData.results[0];
+              resolvedMatchPct = result.match_percentage;
+              resolvedMissingSkills = result.missing_skills ?? [];
+            }
+          }
+        } catch {
+          // Couldn't calculate — continue with null
+        }
+      }
+
       // Separate missing required and preferred skills
       const requiredSkillNames = requiredSkills
         .filter((s) => s.importance === "required")
@@ -72,28 +96,16 @@ export default function GapSummaryDialog({
         .filter((s) => s.importance === "preferred")
         .map((s) => s.skill_name);
 
-      const missingRequired = missingSkills.filter((s) =>
+      const missingRequired = resolvedMissingSkills.filter((s) =>
         requiredSkillNames.some(
           (rs) => rs.toLowerCase() === s.toLowerCase()
         )
       );
-      const missingPreferred = missingSkills.filter((s) =>
+      const missingPreferred = resolvedMissingSkills.filter((s) =>
         preferredSkillNames.some(
           (ps) => ps.toLowerCase() === s.toLowerCase()
         )
       );
-
-      // Fetch ATS score
-      let atsScore: number | null = null;
-      try {
-        const atsRes = await fetch(`/api/jobs/${jobId}/ats-score`);
-        if (atsRes.ok) {
-          const atsData = await atsRes.json();
-          atsScore = atsData.score ?? null;
-        }
-      } catch {
-        // ATS score not available — that's okay
-      }
 
       // Fetch top 3 skills to learn from Skill ROI
       let topSkillsToLearn: SkillROIItem[] = [];
@@ -110,8 +122,7 @@ export default function GapSummaryDialog({
       }
 
       setGapData({
-        matchPercentage,
-        atsScore,
+        matchPercentage: resolvedMatchPct,
         missingRequiredSkills: missingRequired,
         missingPreferredSkills: missingPreferred,
         topSkillsToLearn,
@@ -135,14 +146,14 @@ export default function GapSummaryDialog({
     if (matchPct >= 90) {
       return {
         text: "You're a strong match for this role!",
-        className: "bg-green-50 border-green-200 text-green-800",
+        className: "bg-green-500/10 border-green-500/20 text-green-300",
         icon: "🎉",
       };
     }
     if (matchPct < 60) {
       return {
         text: "You may want to develop these skills first, but you can still apply.",
-        className: "bg-amber-50 border-amber-200 text-amber-800",
+        className: "bg-amber-500/10 border-amber-500/20 text-amber-300",
         icon: "💡",
       };
     }
@@ -160,16 +171,16 @@ export default function GapSummaryDialog({
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 transition-opacity"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
         aria-hidden="true"
         onClick={onClose}
       />
 
       {/* Dialog panel */}
-      <div className="relative z-10 w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
+      <div className="relative z-10 w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-xl glass-card p-6 mx-4">
         <h2
           id="gap-summary-dialog-title"
-          className="text-lg font-semibold text-gray-900"
+          className="text-lg font-semibold text-[var(--text-primary)]"
         >
           Application Summary — {jobTitle}
         </h2>
@@ -177,7 +188,7 @@ export default function GapSummaryDialog({
         {loading ? (
           <div className="mt-4 flex items-center justify-center py-8">
             <svg
-              className="h-6 w-6 animate-spin text-blue-500"
+              className="h-6 w-6 animate-spin text-[var(--accent)]"
               viewBox="0 0 24 24"
               fill="none"
               aria-hidden="true"
@@ -196,7 +207,7 @@ export default function GapSummaryDialog({
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
               />
             </svg>
-            <span className="ml-2 text-sm text-gray-500">
+            <span className="ml-2 text-sm text-[var(--text-muted)]">
               Analyzing your fit...
             </span>
           </div>
@@ -214,39 +225,38 @@ export default function GapSummaryDialog({
               </div>
             )}
 
-            {/* Score Summary */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-md border border-gray-200 bg-gray-50 p-3 text-center">
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                  Match
-                </p>
-                <p className="mt-1 text-2xl font-bold text-gray-900">
-                  {gapData.matchPercentage !== null
-                    ? `${gapData.matchPercentage}%`
-                    : "—"}
-                </p>
-              </div>
-              <div className="rounded-md border border-gray-200 bg-gray-50 p-3 text-center">
-                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                  ATS Score
-                </p>
-                <p className="mt-1 text-2xl font-bold text-gray-900">
-                  {gapData.atsScore !== null ? `${gapData.atsScore}%` : "—"}
-                </p>
-              </div>
+            {/* Skill Match Score */}
+            <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-4 text-center">
+              <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">
+                Skill Match
+              </p>
+              <p className={`mt-1 text-3xl font-bold ${
+                gapData.matchPercentage !== null && gapData.matchPercentage >= 80
+                  ? "text-green-400"
+                  : gapData.matchPercentage !== null && gapData.matchPercentage >= 60
+                  ? "text-yellow-400"
+                  : "text-rose-400"
+              }`}>
+                {gapData.matchPercentage !== null
+                  ? `${gapData.matchPercentage}%`
+                  : "—"}
+              </p>
+              <p className="mt-1 text-xs text-[var(--text-muted)]">
+                Based on your skills vs job requirements
+              </p>
             </div>
 
             {/* Missing Required Skills */}
             {gapData.missingRequiredSkills.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-gray-700">
+                <h3 className="text-sm font-semibold text-[var(--text-secondary)]">
                   Missing Required Skills
                 </h3>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {gapData.missingRequiredSkills.map((skill) => (
                     <span
                       key={skill}
-                      className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800"
+                      className="inline-flex items-center rounded-full bg-rose-500/15 px-2.5 py-0.5 text-xs font-medium text-rose-300 border border-rose-500/20"
                     >
                       {skill}
                     </span>
@@ -258,14 +268,14 @@ export default function GapSummaryDialog({
             {/* Missing Preferred Skills */}
             {gapData.missingPreferredSkills.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-gray-700">
+                <h3 className="text-sm font-semibold text-[var(--text-secondary)]">
                   Missing Preferred Skills
                 </h3>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {gapData.missingPreferredSkills.map((skill) => (
                     <span
                       key={skill}
-                      className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800"
+                      className="inline-flex items-center rounded-full bg-yellow-500/15 px-2.5 py-0.5 text-xs font-medium text-yellow-300 border border-yellow-500/20"
                     >
                       {skill}
                     </span>
@@ -277,22 +287,22 @@ export default function GapSummaryDialog({
             {/* Top 3 Skills to Learn */}
             {gapData.topSkillsToLearn.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-gray-700">
+                <h3 className="text-sm font-semibold text-[var(--text-secondary)]">
                   Top Skills to Learn
                 </h3>
                 <ul className="mt-1.5 space-y-1.5">
                   {gapData.topSkillsToLearn.map((skill, idx) => (
                     <li
                       key={skill.skillName}
-                      className="flex items-center justify-between rounded-md border border-gray-100 bg-gray-50 px-3 py-2"
+                      className="flex items-center justify-between rounded-md border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-3 py-2"
                     >
-                      <span className="flex items-center gap-2 text-sm text-gray-800">
-                        <span className="text-xs text-gray-400">
+                      <span className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
+                        <span className="text-xs text-[var(--text-muted)]">
                           {idx + 1}.
                         </span>
                         {skill.skillName}
                       </span>
-                      <span className="text-xs font-semibold text-green-700">
+                      <span className="text-xs font-semibold text-green-400">
                         +{skill.scoreDelta}% match
                       </span>
                     </li>
@@ -305,7 +315,7 @@ export default function GapSummaryDialog({
             {gapData.missingRequiredSkills.length === 0 &&
               gapData.missingPreferredSkills.length === 0 &&
               gapData.topSkillsToLearn.length === 0 && (
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-[var(--text-secondary)]">
                   No significant skill gaps found. You look like a great fit!
                 </p>
               )}
@@ -313,12 +323,12 @@ export default function GapSummaryDialog({
         ) : null}
 
         {/* Action buttons — always available, never blocks application */}
-        <div className="mt-6 flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
+        <div className="mt-6 flex items-center justify-end gap-3 border-t border-[var(--border-subtle)] pt-4">
           <button
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
+            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-[var(--text-secondary)] shadow-sm hover:bg-gray-50 disabled:opacity-50"
           >
             Cancel
           </button>
