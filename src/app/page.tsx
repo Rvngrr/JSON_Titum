@@ -415,7 +415,6 @@ export default function Home() {
 
             <div className="mt-10 flex flex-wrap justify-center gap-4">
               <Link href="/register" className="btn-primary text-sm">Start Hiring</Link>
-              <Link href="/login" className="btn-secondary text-sm">View Demo</Link>
             </div>
           </div>
         </section>
