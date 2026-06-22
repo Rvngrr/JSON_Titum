@@ -162,7 +162,7 @@ export default function ApplicantLayout({
       </AnimatePresence>
 
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 shrink-0 sidebar-glass p-6 md:block">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 sidebar-glass p-6 md:block">
         <nav className="h-full" aria-label="Applicant dashboard navigation">{navContent}</nav>
       </aside>
 
