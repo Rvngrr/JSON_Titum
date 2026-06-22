@@ -2,7 +2,7 @@
 
 import { useCallback, useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import ResumeUpload from "@/components/applicant/ResumeUpload";
 
@@ -11,6 +11,23 @@ const POPULAR_ROLES = [
   "Advertising", "Software Media", "Customer Svc",
   "Cybersecurity", "Web Developer", "AI/ML Engineer", "UX Designer",
 ];
+
+/**
+ * Typical skills expected for each aspired role.
+ * Used to calculate role readiness against applicant's current skills.
+ */
+const ROLE_EXPECTED_SKILLS: Record<string, string[]> = {
+  "Data Analyst": ["SQL", "Python", "Excel", "Data Analysis", "Statistics", "Tableau", "Power BI", "R"],
+  "Software Developer": ["JavaScript", "Python", "Git", "REST APIs", "SQL", "React", "Node.js", "TypeScript"],
+  "Information Technology": ["Linux", "Networking", "Troubleshooting", "Windows", "Cloud Services", "Security", "Python"],
+  "Advertising": ["Marketing", "Communication", "Social Media", "Analytics", "SEO", "Content Writing", "Adobe Creative Suite"],
+  "Software Media": ["Video Editing", "Adobe Premiere", "After Effects", "Photoshop", "UI/UX Design", "Figma", "Motion Graphics"],
+  "Customer Svc": ["Communication", "Problem-Solving", "CRM", "Empathy", "Multitasking", "Patience", "Conflict Resolution"],
+  "Cybersecurity": ["Networking", "Linux", "Python", "Penetration Testing", "Firewalls", "SIEM", "Cryptography", "Risk Assessment"],
+  "Web Developer": ["HTML", "CSS", "JavaScript", "React", "Node.js", "Git", "Responsive Design", "TypeScript"],
+  "AI/ML Engineer": ["Python", "Machine Learning", "TensorFlow", "Deep Learning", "Statistics", "NLP", "PyTorch", "Data Analysis"],
+  "UX Designer": ["Figma", "User Research", "Wireframing", "Prototyping", "UI/UX Design", "Adobe XD", "Communication"],
+};
 
 const JOB_TYPES = ["Full time", "Part time", "Contract/Temp"];
 const WORK_MODES = ["Remote", "Hybrid", "Onsite"];
@@ -27,6 +44,10 @@ export default function CareerGoalsPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [showIncompleteModal, setShowIncompleteModal] = useState(false);
+  const [incompleteReasons, setIncompleteReasons] = useState<string[]>([]);
 
   // Step 1 state
   const [careerGoal, setCareerGoal] = useState("");
@@ -41,11 +62,36 @@ export default function CareerGoalsPage() {
   // Step 3 state
   const [resumeFilename, setResumeFilename] = useState<string | null>(null);
 
+  // Role readiness state
+  const [userSkills, setUserSkills] = useState<string[]>([]);
+
   const filteredRoles = careerGoal.trim()
     ? POPULAR_ROLES.filter((role) =>
         role.toLowerCase().includes(careerGoal.toLowerCase())
       )
     : [];
+
+  // Calculate role readiness based on user's current skills vs expected role skills
+  const roleReadiness = (() => {
+    const expectedSkills = ROLE_EXPECTED_SKILLS[careerGoal];
+    if (!expectedSkills || userSkills.length === 0) return null;
+
+    const userSkillsLower = userSkills.map((s) => s.toLowerCase());
+    const matched = expectedSkills.filter((expected) =>
+      userSkillsLower.some((us) =>
+        us.includes(expected.toLowerCase()) || expected.toLowerCase().includes(us)
+      )
+    );
+    const missing = expectedSkills.filter(
+      (expected) =>
+        !userSkillsLower.some((us) =>
+          us.includes(expected.toLowerCase()) || expected.toLowerCase().includes(us)
+        )
+    );
+
+    const percentage = Math.round((matched.length / expectedSkills.length) * 100);
+    return { percentage, matched, missing, total: expectedSkills.length };
+  })();
 
   useEffect(() => {
     async function loadExisting() {
@@ -56,7 +102,7 @@ export default function CareerGoalsPage() {
 
         const { data: profile } = await supabase
           .from("skill_profiles")
-          .select("work_preferences, resume_file_path")
+          .select("id, work_preferences, resume_file_path")
           .eq("user_id", user.id)
           .single();
 
@@ -71,6 +117,15 @@ export default function CareerGoalsPage() {
           if (profile.resume_file_path) {
             const parts = (profile.resume_file_path as string).split("/");
             setResumeFilename(parts[parts.length - 1]);
+          }
+
+          // Fetch user's skills for role readiness calculation
+          const { data: skillsData } = await supabase
+            .from("skills")
+            .select("name")
+            .eq("skill_profile_id", (profile as { id: string }).id);
+          if (skillsData) {
+            setUserSkills(skillsData.map((s: { name: string }) => s.name));
           }
         }
       } catch (err) {
@@ -95,6 +150,17 @@ export default function CareerGoalsPage() {
   const handleBack = () => { if (currentStep > 1) setCurrentStep((p) => p - 1); };
 
   const handleComplete = useCallback(async () => {
+    // Validate required steps are completed
+    const reasons: string[] = [];
+    if (!careerGoal.trim()) reasons.push("Select an aspired role / job");
+    if (!resumeFilename) reasons.push("Upload your resume");
+
+    if (reasons.length > 0) {
+      setIncompleteReasons(reasons);
+      setShowIncompleteModal(true);
+      return;
+    }
+
     setSaving(true);
     setError(null);
     try {
@@ -125,7 +191,23 @@ export default function CareerGoalsPage() {
         .eq("id", profile.id);
 
       if (updateError) throw updateError;
-      router.push("/applicant");
+
+      // Show analyzing state
+      setSaving(false);
+      setAnalyzing(true);
+
+      // Trigger match recalculation
+      await fetch("/api/match/calculate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ applicant_id: user.id }),
+      }).catch(() => {});
+
+      // Simulate brief analysis time for UX feedback
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      setAnalyzing(false);
+      setShowCompletionModal(true);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to save career goals.";
       setError(message);
@@ -144,14 +226,14 @@ export default function CareerGoalsPage() {
         </motion.div>
 
         {/* Progress bar */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+        <div className="mb-8 px-6">
+          <div className="flex items-center">
             {Array.from({ length: TOTAL_STEPS }, (_, i) => {
               const step = i + 1;
               const isCompleted = step < currentStep;
               const isActive = step === currentStep;
               return (
-                <div key={step} className="flex flex-1 items-center">
+                <div key={step} className={`flex items-center ${step < TOTAL_STEPS ? "flex-1" : ""}`}>
                   <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-medium transition-colors ${
                     isCompleted ? "bg-[var(--accent)] text-white"
                       : isActive ? "border-2 border-[var(--accent)] bg-[var(--bg-card-solid)] text-[var(--accent)]"
@@ -226,6 +308,96 @@ export default function CareerGoalsPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Role Readiness Indicator */}
+              {roleReadiness && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-6 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-5"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+                      Role Readiness: {careerGoal}
+                    </h3>
+                    <span className={`badge-pill font-bold ${
+                      roleReadiness.percentage >= 75
+                        ? "bg-[var(--success-bg)] text-[var(--success-text)]"
+                        : roleReadiness.percentage >= 50
+                        ? "bg-[var(--warning-bg)] text-[var(--warning-text)]"
+                        : "bg-[var(--error-bg)] text-[var(--error-text)]"
+                    }`}>
+                      {roleReadiness.percentage}% Ready
+                    </span>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="mb-4 h-2.5 w-full overflow-hidden rounded-full bg-[var(--border-subtle)]">
+                    <motion.div
+                      className={`h-full rounded-full ${
+                        roleReadiness.percentage >= 75
+                          ? "bg-[var(--success)]"
+                          : roleReadiness.percentage >= 50
+                          ? "bg-[var(--warning)]"
+                          : "bg-[var(--error)]"
+                      }`}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${roleReadiness.percentage}%` }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                    />
+                  </div>
+
+                  {/* Matched skills */}
+                  {roleReadiness.matched.length > 0 && (
+                    <div className="mb-3">
+                      <p className="mb-2 text-xs font-medium text-[var(--success-text)]">
+                        ✓ Skills you already have ({roleReadiness.matched.length}/{roleReadiness.total})
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {roleReadiness.matched.map((skill) => (
+                          <span key={skill} className="rounded-full bg-[var(--success-bg)] px-2.5 py-1 text-xs font-medium text-[var(--success-text)]">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Missing skills */}
+                  {roleReadiness.missing.length > 0 && (
+                    <div>
+                      <p className="mb-2 text-xs font-medium text-[var(--warning-text)]">
+                        ✗ Skills to develop ({roleReadiness.missing.length}/{roleReadiness.total})
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {roleReadiness.missing.map((skill) => (
+                          <span key={skill} className="rounded-full bg-[var(--warning-bg)] px-2.5 py-1 text-xs font-medium text-[var(--warning-text)]">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Guidance message */}
+                  <p className="mt-4 text-xs text-[var(--text-muted)]">
+                    {roleReadiness.percentage >= 75
+                      ? "You're well-positioned for this role. Keep refining your expertise!"
+                      : roleReadiness.percentage >= 50
+                      ? "You have a solid foundation. Focus on the missing skills to strengthen your candidacy."
+                      : "You're building toward this goal. Consider adding the missing skills through courses or projects."}
+                  </p>
+                </motion.div>
+              )}
+
+              {/* No skills message */}
+              {careerGoal && ROLE_EXPECTED_SKILLS[careerGoal] && userSkills.length === 0 && (
+                <div className="mt-6 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-4 text-center">
+                  <p className="text-sm text-[var(--text-muted)]">
+                    Upload your resume or add skills to your profile to see how ready you are for this role.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -296,7 +468,19 @@ export default function CareerGoalsPage() {
                   Current resume: <strong>{resumeFilename}</strong>
                 </p>
               )}
-              <ResumeUpload />
+              <ResumeUpload onSkillsExtracted={() => {
+                // Update resumeFilename state so validation passes
+                const supabase = createClient();
+                supabase.auth.getUser().then(({ data: { user } }) => {
+                  if (!user) return;
+                  supabase.from("skill_profiles").select("resume_file_path").eq("user_id", user.id).single().then(({ data }) => {
+                    if (data?.resume_file_path) {
+                      const parts = (data.resume_file_path as string).split("/");
+                      setResumeFilename(parts[parts.length - 1]);
+                    }
+                  });
+                });
+              }} />
             </div>
           )}
         </motion.div>
@@ -321,12 +505,139 @@ export default function CareerGoalsPage() {
               Next
             </button>
           ) : (
-            <button type="button" onClick={handleComplete} disabled={saving} className="btn-primary text-sm">
+            <button type="button" onClick={handleComplete} disabled={saving || analyzing} className="btn-primary text-sm">
               {saving ? "Saving..." : "Complete"}
             </button>
           )}
         </div>
       </div>
+
+      {/* Analyzing Overlay */}
+      <AnimatePresence>
+        {analyzing && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="glass-card mx-4 max-w-sm p-8 text-center"
+            >
+              <div className="mb-4 flex justify-center">
+                <svg className="h-10 w-10 animate-spin text-[var(--accent)]" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              </div>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Analyzing Your Profile</h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                Matching your skills against available positions and calculating your role readiness...
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Incomplete Modal */}
+      <AnimatePresence>
+        {showIncompleteModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="glass-card mx-4 max-w-sm p-8 text-center"
+            >
+              <div className="mb-4 flex justify-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--error-bg)]">
+                  <svg className="h-8 w-8 text-[var(--error)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+              </div>
+              <h2 className="text-xl font-bold text-[var(--text-primary)]">Steps Incomplete</h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                Please complete the following before proceeding:
+              </p>
+              <ul className="mt-4 space-y-2 text-left">
+                {incompleteReasons.map((reason) => (
+                  <li key={reason} className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
+                    <svg className="h-4 w-4 flex-shrink-0 text-[var(--error)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <circle cx="12" cy="12" r="9" strokeWidth={2} />
+                    </svg>
+                    {reason}
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                onClick={() => setShowIncompleteModal(false)}
+                className="btn-primary mt-6 w-full text-sm"
+              >
+                Go Back & Complete
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Completion Modal */}
+      <AnimatePresence>
+        {showCompletionModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="glass-card mx-4 max-w-sm p-8 text-center"
+            >
+              <div className="mb-4 flex justify-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--success-bg)]">
+                  <svg className="h-8 w-8 text-[var(--success)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </div>
+              <h2 className="text-xl font-bold text-[var(--text-primary)]">Analysis Complete!</h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                Your career goals have been saved and your profile has been matched against available job positions.
+              </p>
+              {roleReadiness && (
+                <div className="mt-4 rounded-xl bg-[var(--bg-secondary)] p-3 border border-[var(--border-subtle)]">
+                  <p className="text-xs text-[var(--text-muted)]">Role Readiness for <span className="font-semibold text-[var(--text-primary)]">{careerGoal}</span></p>
+                  <p className={`mt-1 text-2xl font-bold ${
+                    roleReadiness.percentage >= 75 ? "text-[var(--success)]"
+                      : roleReadiness.percentage >= 50 ? "text-[var(--warning)]"
+                      : "text-[var(--error)]"
+                  }`}>
+                    {roleReadiness.percentage}%
+                  </p>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => router.push("/applicant")}
+                className="btn-primary mt-6 w-full text-sm"
+              >
+                Check Results
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }
