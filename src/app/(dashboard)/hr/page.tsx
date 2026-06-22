@@ -95,7 +95,7 @@ export default function AdminDashboardPage() {
     <main className="flex-1 p-6 md:p-8">
       <motion.header initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
         <h1 className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)]">
-          Admin Dashboard
+          HR Dashboard
         </h1>
         <p className="mt-1 text-sm text-[var(--text-secondary)]">
           Manage job postings, import from external sources, and monitor platform activity.

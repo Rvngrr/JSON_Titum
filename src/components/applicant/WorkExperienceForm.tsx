@@ -83,19 +83,19 @@ export default function WorkExperienceForm({
       )}
 
       {items.length === 0 ? (
-        <p className="text-sm text-gray-500">No work experience added yet.</p>
+        <p className="text-sm text-[var(--text-muted)]">No work experience added yet.</p>
       ) : (
         <div className="space-y-3">
           {items.map((entry) => (
             <div
               key={entry.id}
-              className="rounded-lg border border-gray-200 bg-gray-50 p-4"
+              className="rounded-xl border border-[var(--border-subtle)] bg-[var(--card-bg)] p-4 shadow-sm"
             >
               {editingId === entry.id ? (
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-600">
+                      <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">
                         Job Title *
                       </label>
                       <input
@@ -105,12 +105,12 @@ export default function WorkExperienceForm({
                           handleUpdate(entry.id, "title", e.target.value)
                         }
                         placeholder="e.g., Software Engineer"
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                         disabled={disabled}
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-600">
+                      <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">
                         Company *
                       </label>
                       <input
@@ -120,14 +120,14 @@ export default function WorkExperienceForm({
                           handleUpdate(entry.id, "company", e.target.value)
                         }
                         placeholder="e.g., Acme Inc."
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                         disabled={disabled}
                       />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-600">
+                      <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">
                         Industry
                       </label>
                       <input
@@ -137,12 +137,12 @@ export default function WorkExperienceForm({
                           handleUpdate(entry.id, "industry", e.target.value)
                         }
                         placeholder="e.g., Technology"
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                         disabled={disabled}
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-600">
+                      <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">
                         Start Date *
                       </label>
                       <input
@@ -151,12 +151,12 @@ export default function WorkExperienceForm({
                         onChange={(e) =>
                           handleUpdate(entry.id, "startDate", e.target.value)
                         }
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                         disabled={disabled}
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-gray-600">
+                      <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">
                         End Date
                       </label>
                       <input
@@ -165,7 +165,7 @@ export default function WorkExperienceForm({
                         onChange={(e) =>
                           handleUpdate(entry.id, "endDate", e.target.value)
                         }
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                         disabled={disabled || entry.isCurrent}
                       />
                       <label className="mt-1 flex items-center gap-1.5">
@@ -175,15 +175,15 @@ export default function WorkExperienceForm({
                           onChange={(e) =>
                             handleUpdate(entry.id, "isCurrent", e.target.checked)
                           }
-                          className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="h-3.5 w-3.5 rounded border-[var(--border-subtle)] text-[var(--accent)] focus:ring-[var(--accent)]"
                           disabled={disabled}
                         />
-                        <span className="text-xs text-gray-500">Current position</span>
+                        <span className="text-xs text-[var(--text-muted)]">Current position</span>
                       </label>
                     </div>
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                    <label className="mb-1 block text-xs font-medium text-[var(--text-secondary)]">
                       Description
                     </label>
                     <textarea
@@ -193,7 +193,7 @@ export default function WorkExperienceForm({
                       }
                       placeholder="Describe your responsibilities and accomplishments..."
                       rows={3}
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                       disabled={disabled}
                     />
                   </div>
@@ -201,14 +201,14 @@ export default function WorkExperienceForm({
                     <button
                       type="button"
                       onClick={() => setEditingId(null)}
-                      className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                      className="rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--sidebar-hover)]"
                     >
                       Done
                     </button>
                     <button
                       type="button"
                       onClick={() => handleRemove(entry.id)}
-                      className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                      className="rounded-lg border border-red-400/30 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-500/10"
                     >
                       Remove
                     </button>
@@ -227,24 +227,24 @@ export default function WorkExperienceForm({
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-[var(--text-primary)]">
                         {entry.title || "Untitled Position"}
                       </p>
-                      <p className="text-xs text-gray-600">
+                      <p className="text-xs text-[var(--text-secondary)]">
                         {entry.company || "Unknown Company"}
                         {entry.industry && ` · ${entry.industry}`}
                       </p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-[var(--text-muted)]">
                         {entry.startDate || "?"} –{" "}
                         {entry.isCurrent
                           ? "Present"
                           : entry.endDate || "?"}
                       </p>
                     </div>
-                    <span className="text-xs text-gray-400">Click to edit</span>
+                    <span className="text-xs text-[var(--text-muted)]">Click to edit</span>
                   </div>
                   {entry.description && (
-                    <p className="mt-1 line-clamp-2 text-xs text-gray-500">
+                    <p className="mt-1 line-clamp-2 text-xs text-[var(--text-muted)]">
                       {entry.description}
                     </p>
                   )}
@@ -260,7 +260,7 @@ export default function WorkExperienceForm({
           type="button"
           onClick={handleAdd}
           disabled={disabled}
-          className="rounded-md border border-dashed border-gray-300 px-3 py-2 text-xs font-medium text-gray-600 hover:border-blue-400 hover:text-blue-600 disabled:opacity-50"
+          className="rounded-lg border border-dashed border-[var(--border-subtle)] px-3 py-2 text-xs font-medium text-[var(--text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-50"
         >
           + Add Work Experience
         </button>
@@ -269,7 +269,7 @@ export default function WorkExperienceForm({
             type="button"
             onClick={handleSave}
             disabled={disabled || saving}
-            className="rounded-md bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-lg bg-[var(--accent)] px-4 py-2 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save Changes"}
           </button>

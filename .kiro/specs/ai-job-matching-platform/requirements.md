@@ -126,3 +126,33 @@ The platform is designed to be built by a team of 2 developers (Front-end/AI int
 1. WHEN an Applicant navigates to the job listings page, THE Platform SHALL display all published Job_Descriptions with title, summary, and Match_Percentage
 2. THE Platform SHALL provide search functionality allowing Applicants to filter Job_Descriptions by keyword, required skills, or Match_Percentage range
 3. WHEN no Job_Descriptions match the applied filters, THE Platform SHALL display a message indicating no results were found and suggest broadening the search criteria
+
+
+---
+
+## Future Features (Planned)
+
+### Feature: Resume ATS Compatibility Detector
+
+**User Story:** As an Applicant, I want to check how ATS-compatible my resume is, so that I can ensure my resume passes automated screening systems used by employers.
+
+#### Planned Capabilities
+
+1. THE Platform SHALL analyze an uploaded resume against common ATS parsing rules and produce a compatibility score (0-100)
+2. THE Platform SHALL identify specific ATS issues such as: unsupported formatting, missing keywords, improper section headers, use of tables/columns/graphics that ATS cannot parse, and non-standard fonts
+3. THE Platform SHALL categorize issues by severity (critical, warning, suggestion)
+4. THE Platform SHALL provide a breakdown of how each section (contact info, experience, education, skills) scores individually
+5. WHEN an Applicant views the ATS report, THE Platform SHALL display actionable recommendations for each identified issue
+
+### Feature: Resume ATS-Friendly Maker
+
+**User Story:** As an Applicant, I want the platform to generate an ATS-optimized version of my resume, so that I can maximize my chances of passing automated screening systems.
+
+#### Planned Capabilities
+
+1. THE Platform SHALL generate an ATS-friendly version of the Applicant's resume based on their Skill_Profile, work experience, education, and certifications
+2. THE Platform SHALL use a clean, single-column, text-based format that is optimized for ATS parsing
+3. THE Platform SHALL allow the Applicant to customize the generated resume by selecting which sections, skills, and experiences to include
+4. THE Platform SHALL tailor the generated resume to a specific Job_Description when one is selected, emphasizing relevant keywords and skills
+5. THE Platform SHALL provide the generated resume as a downloadable PDF or DOCX file
+6. THE Platform SHALL display a before/after ATS compatibility score comparison showing the improvement
