@@ -1,31 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import FloatingOrbs from "@/components/shared/FloatingOrbs";
 import ThemeToggle from "@/components/shared/ThemeToggle";
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: (delay: number) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, delay, ease: "easeOut" },
+    transition: { duration: 0.6, delay, ease: [0.25, 0.46, 0.45, 0.94] },
   }),
 };
 
-const cardFloat = {
+const cardFloat: Variants = {
   hidden: { opacity: 0, y: 30, rotate: 0 },
   visible: (delay: number) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.8, delay, ease: "easeOut" },
+    transition: { duration: 0.8, delay, ease: [0.25, 0.46, 0.45, 0.94] },
   }),
 };
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-hero-gradient">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-hero-gradient">
       <FloatingOrbs density="high" />
 
       {/* Navigation */}
@@ -70,9 +70,9 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <main className="relative z-10 px-6 pt-12 md:px-16 md:pt-20 pb-20">
-        <div className="flex flex-col gap-12 lg:flex-row lg:items-start lg:gap-20">
+      {/* Hero Section — vertically centered */}
+      <main className="relative z-10 flex flex-1 items-center justify-center px-6 md:px-16">
+        <div className="flex w-full max-w-6xl flex-col gap-8 py-12 lg:flex-row lg:items-center lg:justify-center lg:gap-16">
           {/* Left: Text Content */}
           <div className="max-w-xl flex-1">
             <motion.p
@@ -143,7 +143,7 @@ export default function Home() {
           </div>
 
           {/* Right: Floating Cards */}
-          <div className="relative hidden flex-1 lg:block">
+          <div className="relative hidden flex-shrink-0 lg:block lg:min-h-[480px] lg:w-[360px]">
             {/* Applicant Profile Card */}
             <motion.div
               variants={cardFloat}
@@ -151,28 +151,29 @@ export default function Home() {
               animate="visible"
               custom={0.4}
               whileHover={{ rotate: 0, scale: 1.05, y: -8 }}
-              className="absolute right-8 top-0 w-72 rotate-[-2deg] glass-card p-5 cursor-default"
+              className="absolute left-0 top-0 w-80 rotate-[-2deg] glass-card p-6 cursor-default"
             >
               <motion.div
                 animate={{ y: [0, -4, 0, 3, 0] }}
                 transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
               >
-              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)]">
                 Applicant Profile
               </p>
-              <div className="mt-3 flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[var(--orb-blue)] to-[var(--orb-lavender)]">
-                  <svg className="h-6 w-6 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <div className="mt-4 flex items-center gap-3">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[var(--orb-blue)] to-[var(--orb-lavender)]">
+                  <svg className="h-7 w-7 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </div>
-                <span className="text-lg font-bold text-[var(--text-primary)]">Jane Doe</span>
+                <span className="text-xl font-bold text-[var(--text-primary)]">Jane Doe</span>
               </div>
-              <div className="mt-4">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">Key Skills</p>
+              <div className="mt-5">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">Key Skills</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <span className="badge-pill bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-subtle)]">Python</span>
                   <span className="badge-pill bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-subtle)]">Data Analysis</span>
+                  <span className="badge-pill bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-subtle)]">SQL</span>
                 </div>
               </div>
               </motion.div>
@@ -185,20 +186,20 @@ export default function Home() {
               animate="visible"
               custom={0.6}
               whileHover={{ rotate: 0, scale: 1.05, y: -8 }}
-              className="absolute right-0 top-52 w-72 rotate-[1deg] glass-card p-5 cursor-default"
+              className="absolute left-10 top-56 w-80 rotate-[1deg] glass-card p-6 cursor-default"
             >
               <motion.div
                 animate={{ y: [0, 3, 0, -4, 0] }}
                 transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
               >
-              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)]">
                 Top Job Match
               </p>
-              <h3 className="mt-2 text-xl font-bold text-[var(--text-primary)]">Backend Developer</h3>
+              <h3 className="mt-3 text-2xl font-bold text-[var(--text-primary)]">Backend Developer</h3>
               <p className="text-sm text-[var(--text-secondary)]">TechCorp</p>
-              <div className="mt-3 flex items-center gap-2">
-                <div className="relative h-10 w-10">
-                  <svg className="h-10 w-10 -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
+              <div className="mt-4 flex items-center gap-3">
+                <div className="relative h-12 w-12">
+                  <svg className="h-12 w-12 -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
                     <path
                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                       fill="none"
@@ -216,7 +217,7 @@ export default function Home() {
                 </div>
                 <div>
                   <p className="text-xs text-[var(--text-muted)]">Match Percentage:</p>
-                  <p className="text-lg font-bold text-[var(--text-primary)]">95%</p>
+                  <p className="text-xl font-bold text-[var(--text-primary)]">95%</p>
                 </div>
               </div>
               </motion.div>
@@ -224,14 +225,14 @@ export default function Home() {
 
             {/* Decorative small orbs around cards */}
             <motion.div
-              animate={{ y: [0, -15, 0], x: [0, 8, 0], opacity: [0.3, 0.6, 0.3] }}
+              animate={{ y: [0, -15, 0], x: [0, 8, 0], opacity: [0.4, 0.7, 0.4] }}
               transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -left-6 top-20 h-16 w-16 rounded-full bg-gradient-to-br from-[var(--orb-pink)] to-transparent blur-xl"
+              className="absolute -left-10 top-24 h-16 w-16 rounded-full bg-gradient-to-br from-[var(--orb-pink)] to-transparent blur-xl"
             />
             <motion.div
-              animate={{ y: [0, 12, 0], x: [0, -6, 0], opacity: [0.2, 0.5, 0.2] }}
+              animate={{ y: [0, 12, 0], x: [0, -6, 0], opacity: [0.3, 0.6, 0.3] }}
               transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-              className="absolute -right-4 bottom-12 h-20 w-20 rounded-full bg-gradient-to-br from-[var(--orb-blue)] to-transparent blur-xl"
+              className="absolute left-2 bottom-8 h-20 w-20 rounded-full bg-gradient-to-br from-[var(--orb-blue)] to-transparent blur-xl"
             />
           </div>
         </div>
