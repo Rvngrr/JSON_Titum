@@ -11,6 +11,7 @@ interface SkillEntry {
 
 interface JobFormData {
   title: string;
+  companyName: string;
   description: string;
   qualifications: string;
   skills: SkillEntry[];
@@ -21,6 +22,7 @@ interface JobDescriptionFormProps {
   initialData?: {
     id: string;
     title: string;
+    company_name?: string | null;
     description: string;
     qualifications?: string | null;
     skills: Array<{ skill_name: string; importance: "required" | "preferred" }>;
@@ -32,6 +34,7 @@ export default function JobDescriptionForm({ initialData }: JobDescriptionFormPr
 
   const [formData, setFormData] = useState<JobFormData>({
     title: initialData?.title ?? "",
+    companyName: initialData?.company_name ?? "",
     description: initialData?.description ?? "",
     qualifications: initialData?.qualifications ?? "",
     skills: initialData?.skills?.map((s) => ({
@@ -143,6 +146,7 @@ export default function JobDescriptionForm({ initialData }: JobDescriptionFormPr
           .from("job_descriptions")
           .update({
             title: formData.title.trim(),
+            company_name: formData.companyName.trim() || null,
             description: formData.description.trim(),
             qualifications: formData.qualifications.trim() || null,
             updated_at: new Date().toISOString(),
@@ -192,6 +196,7 @@ export default function JobDescriptionForm({ initialData }: JobDescriptionFormPr
           .insert({
             hr_user_id: user.id,
             title: formData.title.trim(),
+            company_name: formData.companyName.trim() || null,
             description: formData.description.trim(),
             qualifications: formData.qualifications.trim() || null,
             status: "draft",
@@ -272,6 +277,22 @@ export default function JobDescriptionForm({ initialData }: JobDescriptionFormPr
             {validationErrors.title}
           </p>
         )}
+      </div>
+
+      {/* Company Name */}
+      <div className="mb-4">
+        <label htmlFor="company-name" className="mb-1.5 block text-sm font-medium text-[var(--text-primary)]">
+          Company Name
+        </label>
+        <input
+          id="company-name"
+          type="text"
+          name="companyName"
+          value={formData.companyName}
+          onChange={(e) => handleFieldChange("companyName", e.target.value)}
+          className="input-glass w-full px-4 py-2.5 text-sm"
+          placeholder="e.g. TechCorp, Google, Startup XYZ"
+        />
       </div>
 
       {/* Description */}
