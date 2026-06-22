@@ -367,6 +367,11 @@ function getProviderAdapter(provider: LLMProvider): (request: LLMRequest) => Pro
       return callGemini;
     case 'llm7':
       return callLLM7;
+    case 'groq':
+      // Groq uses OpenAI-compatible API format
+      return callOpenAI;
+    default:
+      return callOpenAI;
   }
 }
 
