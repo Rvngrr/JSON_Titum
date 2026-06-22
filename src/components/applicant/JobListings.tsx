@@ -349,7 +349,7 @@ export default function JobListings() {
                     >
                       {job.title}
                     </Link>
-                    <p className="mt-1 line-clamp-2 text-sm text-gray-600">
+                    <p className="mt-1 line-clamp-2 text-sm text-slate-300">
                       {job.description}
                     </p>
                     {job.requiredSkills.length > 0 && (
@@ -357,7 +357,7 @@ export default function JobListings() {
                         {job.requiredSkills.map((skill) => (
                           <span
                             key={skill}
-                            className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700"
+                            className="inline-flex items-center rounded-full bg-orange-500/8 px-2.5 py-0.5 text-xs font-medium text-orange-400/70 border border-orange-500/15"
                           >
                             {skill}
                           </span>
