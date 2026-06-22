@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ErrorBoundary from "@/components/shared/ErrorBoundary";
 import LogoutButton from "@/components/shared/LogoutButton";
+import AuthGuard from "@/components/shared/AuthGuard";
 import { useState } from "react";
 
 const NAV_ITEMS = [
@@ -137,6 +138,7 @@ export default function ApplicantLayout({
   );
 
   return (
+    <AuthGuard>
     <div className="flex min-h-screen">
       {/* Mobile header */}
       <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 md:hidden">
@@ -212,5 +214,6 @@ export default function ApplicantLayout({
         <ErrorBoundary>{children}</ErrorBoundary>
       </div>
     </div>
+    </AuthGuard>
   );
 }

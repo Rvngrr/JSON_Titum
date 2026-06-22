@@ -158,6 +158,14 @@ export default function ResumeUpload({
         setUploadProgress(100);
         setStatus("success");
         addToast("success", "Resume parsed successfully!");
+
+        // Notify user about sections that had no data extracted
+        if (parseData.warnings && parseData.warnings.length > 0) {
+          for (const warning of parseData.warnings) {
+            addToast("warning", warning);
+          }
+        }
+
         onSkillsExtracted?.(parseData.skills);
       } catch (err) {
         const message = err instanceof Error ? err.message : "An unexpected error occurred.";
@@ -219,49 +227,65 @@ export default function ResumeUpload({
     <section aria-label="Resume upload" className="w-full">
       {/* Current resume display */}
       {currentFilename && status !== "uploading" && status !== "parsing" && (
-        <div className="mb-3 flex items-center justify-between rounded-md border border-green-200 bg-green-50 p-3">
-          <div className="flex items-center gap-2 text-sm text-gray-700">
-            <svg
-              className="h-5 w-5 text-green-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <span>
-              Current resume: <strong>{currentFilename}</strong>
-            </span>
+        <div className="mb-3 rounded-md border border-green-200 bg-green-50 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-gray-700">
+              <svg
+                className="h-5 w-5 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span>
+                Current resume: <strong>{currentFilename}</strong>
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  try {
+                    const supabase = createClient();
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) return;
+                    const response = await fetch(`/api/resume/view?applicant_id=${user.id}`);
+                    const data = await response.json();
+                    if (data.url) {
+                      window.open(data.url, "_blank");
+                    } else {
+                      addToast("error", data.error || "Unable to open resume.");
+                    }
+                  } catch {
+                    addToast("error", "Failed to open resume.");
+                  }
+                }}
+                className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                aria-label="View current resume"
+              >
+                View Resume
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                }}
+                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                aria-label="Replace current resume with a new file"
+              >
+                Replace Resume
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={async (e) => {
-              e.stopPropagation();
-              try {
-                const supabase = createClient();
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) return;
-                const response = await fetch(`/api/resume/view?applicant_id=${user.id}`);
-                const data = await response.json();
-                if (data.url) {
-                  window.open(data.url, "_blank");
-                } else {
-                  alert(data.error || "Unable to open resume.");
-                }
-              } catch {
-                alert("Failed to open resume.");
-              }
-            }}
-            className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
-          >
-            View Resume
-          </button>
         </div>
       )}
 

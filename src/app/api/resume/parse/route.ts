@@ -153,11 +153,20 @@ export async function POST(request: Request) {
 
     if (upsertError || !skillProfile) {
       console.error("[resume/parse] Step 4 failed:", upsertError);
+
+      // Provide specific guidance about which column is missing
+      let errorDetail = upsertError?.message ?? "Unknown error";
+      if (errorDetail.includes("column") && errorDetail.includes("schema cache")) {
+        const columnMatch = errorDetail.match(/'(\w+)' column/);
+        const missingColumn = columnMatch ? columnMatch[1] : "unknown";
+        errorDetail = `Database column '${missingColumn}' not found. Please run the latest migration (014_add_profile_jsonb_columns.sql) in your Supabase SQL Editor.`;
+      }
+
       return Response.json(
         {
           success: false,
           skills: [],
-          error: `Failed to save skill profile: ${upsertError?.message ?? "Unknown error"}`,
+          error: `Failed to save skill profile: ${errorDetail}`,
         } satisfies ResumeParseResponse,
         { status: 500 }
       );
@@ -244,13 +253,29 @@ export async function POST(request: Request) {
       console.error("[resume/parse] Match calculation failed:", matchError);
     }
 
-    // 8. Return the parsed response
+    // 8. Build section warnings for sections that had no data extracted
+    const sectionWarnings: string[] = [];
+    if (extractedSkills.length === 0) {
+      sectionWarnings.push("Skills: No skills detected from your resume.");
+    }
+    if (structuredProfile.experience.length === 0) {
+      sectionWarnings.push("Work Experience: No work experience entries detected.");
+    }
+    if (structuredProfile.education.length === 0) {
+      sectionWarnings.push("Education: No education entries detected.");
+    }
+    if (structuredProfile.certifications.length === 0) {
+      sectionWarnings.push("Certifications: No certifications detected.");
+    }
+
+    // 9. Return the parsed response with warnings
     return Response.json({
       success: true,
       skills: extractedSkills,
       profile: resumeProfile,
       raw_text: rawText,
-    } satisfies ResumeParseResponse);
+      warnings: sectionWarnings.length > 0 ? sectionWarnings : undefined,
+    });
   } catch (error) {
     console.error("[resume/parse] Error:", error);
     const message =

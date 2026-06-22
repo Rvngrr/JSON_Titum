@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import ErrorBoundary from "@/components/shared/ErrorBoundary";
 import LogoutButton from "@/components/shared/LogoutButton";
+import AuthGuard from "@/components/shared/AuthGuard";
 
 const NAV_ITEMS = [
   {
@@ -121,7 +122,8 @@ export default function HRLayout({
   );
 
   return (
-    <div className="flex min-h-screen">
+    <AuthGuard>
+      <div className="flex min-h-screen">
       {/* Mobile header */}
       <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 md:hidden">
         <h2 className="text-lg font-semibold text-gray-900">HR Portal</h2>
@@ -194,5 +196,6 @@ export default function HRLayout({
         <ErrorBoundary>{children}</ErrorBoundary>
       </div>
     </div>
+    </AuthGuard>
   );
 }

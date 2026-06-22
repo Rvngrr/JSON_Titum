@@ -286,7 +286,14 @@ export default function ApplicantProfilePage() {
             Resume
           </h2>
           <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <ResumeUpload onSkillsExtracted={handleSkillsExtracted} />
+            <ResumeUpload
+              onSkillsExtracted={handleSkillsExtracted}
+              existingFilename={
+                profileData?.resume_file_path
+                  ? profileData.resume_file_path.split("/").pop() ?? null
+                  : null
+              }
+            />
           </div>
         </section>
 
