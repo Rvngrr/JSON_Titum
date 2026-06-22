@@ -87,27 +87,21 @@ export function mapJobToRecord(
 ) {
   const sourceLabel = apiSource === 'jsearch' ? 'via JSearch' : 'via Indeed';
 
+  // Build location string from city/state/country
+  const locationParts = [job.job_city, job.job_state, job.job_country].filter(Boolean);
+  const locationStr = locationParts.length > 0 ? locationParts.join(', ') : null;
+
   return {
     title: job.job_title,
-    description: job.job_description,
+    description: job.job_description || `Imported ${sourceLabel}. Apply at: ${job.job_apply_link || 'N/A'}`,
     hr_user_id: systemUserId,
     status: 'published',
     external_job_id: job.job_id,
     source: apiSource,
-    source_company: job.employer_name,
-    job_link: job.job_apply_link,
+    location: locationStr,
     salary_min: job.job_min_salary,
     salary_max: job.job_max_salary,
-    salary_currency: job.job_salary_currency,
-    salary_period: job.job_salary_period,
-    employment_type: job.job_employment_type,
-    location_city: job.job_city,
-    location_state: job.job_state,
-    highlights: job.job_highlights ?? null,
-    imported_at: new Date().toISOString(),
-    // Store source attribution in description context
-    // The source_company + source + job_link fields already provide attribution
-    // Additional "via JSearch"/"via Indeed" indicator is in the `source` field
+    salary_currency: job.job_salary_currency || 'USD',
     qualifications: buildQualificationsText(job, sourceLabel),
   };
 }
@@ -254,7 +248,7 @@ export async function importJobs(options: ImportOptions): Promise<ImportResult> 
   }
 
   // --- Step 5: Map and store new jobs ---
-  const systemUserId = await getSystemUserId();
+  const systemUserId = options.hrUserId || await getSystemUserId();
   const supabase = createAdminClient();
   let importedCount = 0;
   let usedLocalFallback = false;
@@ -355,30 +349,63 @@ async function fetchAndCache(
   options: ImportOptions,
   warnings: string[]
 ): Promise<JSearchJob[]> {
-  try {
-    const response = await fetchJobs(options.query, options.location);
+  const allJobs: JSearchJob[] = [];
 
-    // Increment rate limit counter after successful fetch
+  // Try JSearch first
+  try {
+    const jsearchResponse = await fetchJobs(options.query, options.location);
     await incrementRequestCount();
 
-    // Store in cache
+    if (jsearchResponse.data && jsearchResponse.data.length > 0) {
+      allJobs.push(...jsearchResponse.data);
+    }
+
+    // Cache JSearch response
     try {
       await storeCachedResponse(
         options.query,
         options.location,
-        options.apiSource,
-        response as unknown as Record<string, unknown>
+        'jsearch',
+        jsearchResponse as unknown as Record<string, unknown>
       );
     } catch (cacheError) {
-      // Cache write failure is non-fatal
-      console.warn('[ImportService] Failed to store response in cache:', cacheError);
-      warnings.push('Failed to cache API response. The import will continue but the response is not cached.');
+      console.warn('[ImportService] Failed to cache JSearch response:', cacheError);
+    }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.warn('[ImportService] JSearch fetch failed:', msg);
+    warnings.push(`JSearch: ${msg}`);
+  }
+
+  // Also try Indeed
+  try {
+    const { fetchIndeedJobs } = await import('./indeed-client');
+    const indeedResponse = await fetchIndeedJobs(options.query, options.location);
+
+    if (indeedResponse.data && indeedResponse.data.length > 0) {
+      allJobs.push(...indeedResponse.data);
     }
 
-    return response.data || [];
+    // Cache Indeed response
+    try {
+      await storeCachedResponse(
+        options.query,
+        options.location,
+        'indeed',
+        indeedResponse as unknown as Record<string, unknown>
+      );
+    } catch (cacheError) {
+      console.warn('[ImportService] Failed to cache Indeed response:', cacheError);
+    }
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error('[ImportService] API fetch failed:', message);
-    throw new Error(message);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.warn('[ImportService] Indeed fetch failed:', msg);
+    warnings.push(`Indeed: ${msg}`);
   }
+
+  if (allJobs.length === 0 && warnings.length > 0) {
+    throw new Error('All job API providers returned 0 results. ' + warnings.join(' | '));
+  }
+
+  return allJobs;
 }

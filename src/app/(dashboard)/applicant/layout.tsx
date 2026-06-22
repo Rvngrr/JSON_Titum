@@ -205,7 +205,7 @@ export default function ApplicantLayout({
       </aside>
 
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 shrink-0 border-r border-gray-200 bg-gray-50 p-6 md:block">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-gray-200 bg-gray-50 p-6 md:block">
         <nav className="h-full" aria-label="Applicant dashboard navigation">{navContent}</nav>
       </aside>
 
