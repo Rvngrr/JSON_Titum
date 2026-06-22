@@ -105,12 +105,12 @@ export default function AnalyticsDashboard() {
 
   if (error) {
     return (
-      <div className="rounded-md bg-red-50 p-4" role="alert" aria-live="assertive">
-        <p className="text-sm text-red-700">{error}</p>
+      <div className="rounded-xl bg-[var(--error-bg)] p-4" role="alert" aria-live="assertive">
+        <p className="text-sm text-[var(--error-text)]">{error}</p>
         <button
           type="button"
           onClick={() => fetchAnalytics(true)}
-          className="mt-2 text-sm font-medium text-red-600 underline hover:text-red-800"
+          className="mt-2 text-sm font-medium text-[var(--error-text)] underline hover:opacity-80"
         >
           Retry
         </button>
@@ -135,7 +135,7 @@ export default function AnalyticsDashboard() {
       {/* Header with Export */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[var(--text-muted)]">
             Auto-refreshing every 30 seconds
           </p>
         </div>
@@ -143,7 +143,7 @@ export default function AnalyticsDashboard() {
           type="button"
           onClick={handleCSVExport}
           disabled={exporting}
-          className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-xl border border-[var(--border-input)] bg-[var(--bg-card-solid)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] shadow-sm hover:bg-[var(--sidebar-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="Export analytics data as CSV"
         >
           <svg
@@ -209,24 +209,24 @@ export default function AnalyticsDashboard() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Top Skills in Demand */}
         <section
-          className="rounded-lg border border-gray-200 bg-white p-6"
+          className="rounded-xl border border-[var(--border-input)] bg-[var(--bg-card-solid)] p-6"
           aria-labelledby="top-skills-heading"
         >
-          <h3 id="top-skills-heading" className="text-base font-semibold text-gray-900 mb-4">
+          <h3 id="top-skills-heading" className="text-base font-semibold text-[var(--text-primary)] mb-4">
             Top Skills in Demand
           </h3>
           {data.topSkillsInDemand.length === 0 ? (
-            <p className="text-sm text-gray-500">No skill data available yet.</p>
+            <p className="text-sm text-[var(--text-muted)]">No skill data available yet.</p>
           ) : (
             <ul className="space-y-3" aria-label="Top 10 skills in demand">
               {data.topSkillsInDemand.map((entry) => (
                 <li key={entry.skill} className="flex items-center gap-3">
-                  <span className="w-28 shrink-0 truncate text-sm text-gray-700" title={entry.skill}>
+                  <span className="w-28 shrink-0 truncate text-sm text-[var(--text-secondary)]" title={entry.skill}>
                     {entry.skill}
                   </span>
-                  <div className="flex-1 h-5 rounded-full bg-gray-100 overflow-hidden">
+                  <div className="flex-1 h-5 rounded-full bg-[var(--bg-secondary)] overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-blue-500 transition-all duration-300"
+                      className="h-full rounded-full bg-[var(--accent)] transition-all duration-300"
                       style={{ width: `${(entry.count / maxSkillCount) * 100}%` }}
                       role="progressbar"
                       aria-valuenow={entry.count}
@@ -235,7 +235,7 @@ export default function AnalyticsDashboard() {
                       aria-label={`${entry.skill}: ${entry.count} listings`}
                     />
                   </div>
-                  <span className="w-8 text-right text-sm font-medium text-gray-600">
+                  <span className="w-8 text-right text-sm font-medium text-[var(--text-secondary)]">
                     {entry.count}
                   </span>
                 </li>
@@ -246,33 +246,37 @@ export default function AnalyticsDashboard() {
 
         {/* Applicant Growth Trend (4 weeks) */}
         <section
-          className="rounded-lg border border-gray-200 bg-white p-6"
+          className="rounded-xl border border-[var(--border-input)] bg-[var(--bg-card-solid)] pt-6 px-6 pb-3 flex flex-col"
           aria-labelledby="growth-trend-heading"
         >
-          <h3 id="growth-trend-heading" className="text-base font-semibold text-gray-900 mb-4">
+          <h3 id="growth-trend-heading" className="text-base font-semibold text-[var(--text-primary)] mb-4">
             Applicant Growth Trend (Last 4 Weeks)
           </h3>
           {data.applicantGrowthTrend.length === 0 ? (
-            <p className="text-sm text-gray-500">No growth data available yet.</p>
+            <p className="text-sm text-[var(--text-muted)]">No growth data available yet.</p>
           ) : (
-            <div className="flex items-end justify-between gap-3 h-40" aria-label="Applicant growth bar chart">
-              {data.applicantGrowthTrend.map((week) => {
-                const heightPct = maxGrowthCount > 0 ? (week.count / maxGrowthCount) * 100 : 0;
-                return (
-                  <div key={week.month} className="flex flex-1 flex-col items-center gap-1">
-                    <span className="text-xs font-medium text-gray-700">{week.count}</span>
-                    <div className="w-full relative" style={{ height: "120px" }}>
+            <div className="flex flex-col flex-1" aria-label="Applicant growth bar chart">
+              <div className="flex items-end gap-3 flex-1 min-h-[8rem]">
+                {data.applicantGrowthTrend.map((week) => {
+                  const heightPct = maxGrowthCount > 0 ? (week.count / maxGrowthCount) * 100 : 0;
+                  return (
+                    <div key={week.month} className="flex flex-1 flex-col items-center h-full justify-end">
+                      <span className="text-xs font-medium text-[var(--text-secondary)] mb-1">{week.count}</span>
                       <div
-                        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 rounded-t bg-green-400 transition-all duration-300"
-                        style={{ height: `${Math.max(heightPct, 4)}%` }}
+                        className="w-2/3 rounded-t bg-[var(--success)] transition-all duration-300"
+                        style={{ height: `${Math.max(heightPct, 2)}%`, minHeight: "4px" }}
                         role="img"
                         aria-label={`${week.month}: ${week.count} new applicants`}
                       />
                     </div>
-                    <span className="text-xs text-gray-500 text-center">{week.month}</span>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+              <div className="flex gap-3 pt-1">
+                {data.applicantGrowthTrend.map((week) => (
+                  <span key={week.month} className="flex-1 text-xs text-[var(--text-muted)] text-center">{week.month}</span>
+                ))}
+              </div>
             </div>
           )}
         </section>
@@ -280,39 +284,39 @@ export default function AnalyticsDashboard() {
 
       {/* Skill Gap Analysis */}
       <section
-        className="rounded-lg border border-gray-200 bg-white p-6"
+        className="rounded-xl border border-[var(--border-input)] bg-[var(--bg-card-solid)] p-6"
         aria-labelledby="skill-gap-heading"
       >
-        <h3 id="skill-gap-heading" className="text-base font-semibold text-gray-900 mb-4">
+        <h3 id="skill-gap-heading" className="text-base font-semibold text-[var(--text-primary)] mb-4">
           Skill Gap Analysis (Top 5)
         </h3>
         {data.skillGapAnalysis.length === 0 ? (
-          <p className="text-sm text-gray-500">No skill gap data available yet.</p>
+          <p className="text-sm text-[var(--text-muted)]">No skill gap data available yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm" aria-label="Skill gap analysis table">
               <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="pb-2 text-left font-medium text-gray-600">Skill</th>
-                  <th className="pb-2 text-right font-medium text-gray-600">Demand</th>
-                  <th className="pb-2 text-right font-medium text-gray-600">Supply</th>
-                  <th className="pb-2 text-right font-medium text-gray-600">Gap Ratio</th>
+                <tr className="border-b border-[var(--border-subtle)]">
+                  <th className="pb-2 text-left font-medium text-[var(--text-muted)]">Skill</th>
+                  <th className="pb-2 text-right font-medium text-[var(--text-muted)]">Demand</th>
+                  <th className="pb-2 text-right font-medium text-[var(--text-muted)]">Supply</th>
+                  <th className="pb-2 text-right font-medium text-[var(--text-muted)]">Gap Ratio</th>
                 </tr>
               </thead>
               <tbody>
                 {data.skillGapAnalysis.map((entry) => (
-                  <tr key={entry.skill} className="border-b border-gray-100 last:border-0">
-                    <td className="py-2 text-gray-800 font-medium">{entry.skill}</td>
-                    <td className="py-2 text-right text-gray-700">{entry.demandCount}</td>
-                    <td className="py-2 text-right text-gray-700">{entry.supplyCount}</td>
+                  <tr key={entry.skill} className="border-b border-[var(--border-subtle)] last:border-0">
+                    <td className="py-2 text-[var(--text-primary)] font-medium">{entry.skill}</td>
+                    <td className="py-2 text-right text-[var(--text-secondary)]">{entry.demandCount}</td>
+                    <td className="py-2 text-right text-[var(--text-secondary)]">{entry.supplyCount}</td>
                     <td className="py-2 text-right">
                       <span
                         className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                           entry.gapRatio >= 3
-                            ? "bg-red-100 text-red-700"
+                            ? "bg-[var(--error-bg)] text-[var(--error-text)]"
                             : entry.gapRatio >= 2
-                              ? "bg-orange-100 text-orange-700"
-                              : "bg-yellow-100 text-yellow-700"
+                              ? "bg-orange-500/15 text-orange-400"
+                              : "bg-[var(--warning-bg)] text-[var(--warning-text)]"
                         }`}
                       >
                         {entry.gapRatio}x
@@ -342,13 +346,13 @@ interface MetricCardProps {
 
 function MetricCard({ label, value, subtitle, icon }: MetricCardProps) {
   return (
-    <article className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+    <article className="rounded-xl border border-[var(--border-input)] bg-[var(--bg-card-solid)] p-5 shadow-sm">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-500">{label}</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">{value}</p>
+          <p className="text-sm font-medium text-[var(--text-muted)]">{label}</p>
+          <p className="mt-1 text-2xl font-bold text-[var(--text-primary)]">{value}</p>
           {subtitle && (
-            <p className="mt-1 text-xs text-gray-500">{subtitle}</p>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">{subtitle}</p>
           )}
         </div>
         <div className="shrink-0">{icon}</div>

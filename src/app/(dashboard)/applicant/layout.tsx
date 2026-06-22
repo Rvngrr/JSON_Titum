@@ -61,11 +61,7 @@ export default function ApplicantLayout({
       <div>
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 mb-6">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-accent-teal to-periwinkle">
-            <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
+          <img src="/careerflow.png" alt="CareerFlow logo" className="h-7 w-7 rounded-lg object-contain" />
           <span className="text-sm font-bold text-[var(--text-primary)]">CareerFlow</span>
         </Link>
 
@@ -110,20 +106,11 @@ export default function ApplicantLayout({
 
   return (
     <div className="flex min-h-screen bg-[var(--bg-secondary)] relative overflow-hidden">
-      {/* Subtle background decoration */}
-      <FloatingOrbs showDots={false} orbs={[
-        { color: "bg-[var(--orb-pink)]", size: "h-48 w-48", x: "right-[-5%]", y: "top-[10%]", delay: 0, blur: "blur-3xl" },
-        { color: "bg-[var(--orb-blue)]", size: "h-40 w-40", x: "left-[40%]", y: "bottom-[-5%]", delay: 2, blur: "blur-3xl" },
-        { color: "bg-[var(--orb-lavender)]", size: "h-32 w-32", x: "right-[20%]", y: "bottom-[30%]", delay: 4, blur: "blur-3xl" },
-      ]} />
+      <FloatingOrbs />
       {/* Mobile header */}
       <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-3 md:hidden sidebar-glass">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-accent-teal to-periwinkle">
-            <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
+          <img src="/careerflow.png" alt="CareerFlow logo" className="h-7 w-7 rounded-lg object-contain" />
           <span className="text-sm font-bold text-[var(--text-primary)]">CareerFlow</span>
         </Link>
         <button

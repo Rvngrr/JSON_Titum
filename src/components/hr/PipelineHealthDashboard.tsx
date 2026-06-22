@@ -46,10 +46,10 @@ const TIER_CONFIGS: TierConfig[] = [
     label: "Top Tier",
     emoji: "🟢",
     range: "90%+",
-    bgColor: "bg-green-50",
-    textColor: "text-green-700",
-    borderColor: "border-green-200",
-    hoverBg: "hover:bg-green-100",
+    bgColor: "bg-green-500/10",
+    textColor: "text-green-400",
+    borderColor: "border-green-500/30",
+    hoverBg: "hover:bg-green-500/20",
     minMatch: 90,
     maxMatch: 100,
   },
@@ -58,10 +58,10 @@ const TIER_CONFIGS: TierConfig[] = [
     label: "Good Fit",
     emoji: "🟡",
     range: "75-89%",
-    bgColor: "bg-yellow-50",
-    textColor: "text-yellow-700",
-    borderColor: "border-yellow-200",
-    hoverBg: "hover:bg-yellow-100",
+    bgColor: "bg-yellow-500/10",
+    textColor: "text-yellow-400",
+    borderColor: "border-yellow-500/30",
+    hoverBg: "hover:bg-yellow-500/20",
     minMatch: 75,
     maxMatch: 89,
   },
@@ -70,10 +70,10 @@ const TIER_CONFIGS: TierConfig[] = [
     label: "Potential",
     emoji: "🟠",
     range: "60-74%",
-    bgColor: "bg-orange-50",
-    textColor: "text-orange-700",
-    borderColor: "border-orange-200",
-    hoverBg: "hover:bg-orange-100",
+    bgColor: "bg-orange-500/10",
+    textColor: "text-orange-400",
+    borderColor: "border-orange-500/30",
+    hoverBg: "hover:bg-orange-500/20",
     minMatch: 60,
     maxMatch: 74,
   },
@@ -82,10 +82,10 @@ const TIER_CONFIGS: TierConfig[] = [
     label: "Gap",
     emoji: "🔴",
     range: "<60%",
-    bgColor: "bg-red-50",
-    textColor: "text-red-700",
-    borderColor: "border-red-200",
-    hoverBg: "hover:bg-red-100",
+    bgColor: "bg-red-500/10",
+    textColor: "text-red-400",
+    borderColor: "border-red-500/30",
+    hoverBg: "hover:bg-red-500/20",
     minMatch: 0,
     maxMatch: 59,
   },
@@ -217,7 +217,7 @@ export default function PipelineHealthDashboard() {
   if (error) {
     return (
       <section aria-label="Pipeline health dashboard">
-        <p className="text-red-600" role="alert">
+        <p className="text-[var(--error-text)]" role="alert">
           {error}
         </p>
       </section>
@@ -228,7 +228,7 @@ export default function PipelineHealthDashboard() {
   if (healthData.length === 0) {
     return (
       <section aria-label="Pipeline health dashboard">
-        <p className="text-gray-500">
+        <p className="text-[var(--text-muted)]">
           No published jobs yet. Publish a job to see pipeline health data.
         </p>
       </section>
@@ -241,15 +241,15 @@ export default function PipelineHealthDashboard() {
         {healthData.map((entry) => (
           <article
             key={entry.jobId}
-            className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+            className="rounded-xl border border-[var(--border-input)] bg-[var(--bg-card-solid)] p-4 shadow-sm"
             aria-label={`Pipeline health for ${entry.jobTitle}`}
           >
             {/* Job title and total applicants */}
             <div className="mb-3">
-              <h3 className="text-sm font-semibold text-gray-900 truncate" title={entry.jobTitle}>
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] truncate" title={entry.jobTitle}>
                 {entry.jobTitle}
               </h3>
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">
                 {entry.totalApplicants} applicant{entry.totalApplicants !== 1 ? "s" : ""}
               </p>
             </div>
@@ -273,7 +273,7 @@ export default function PipelineHealthDashboard() {
                     <span className={`text-lg font-bold ${tier.textColor}`}>
                       {count}
                     </span>
-                    <span className="text-[10px] text-gray-500 leading-tight text-center">
+                    <span className="text-[10px] text-[var(--text-muted)] leading-tight text-center">
                       {tier.range}
                     </span>
                   </button>

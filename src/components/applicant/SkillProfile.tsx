@@ -14,20 +14,20 @@ const PROFICIENCY_LEVELS: ProficiencyLevel[] = [
 ];
 
 const PROFICIENCY_COLORS: Record<ProficiencyLevel, string> = {
-  beginner: "bg-gray-100 text-gray-700",
-  intermediate: "bg-blue-100 text-blue-700",
-  advanced: "bg-purple-100 text-purple-700",
-  expert: "bg-green-100 text-green-700",
+  beginner: "bg-[var(--bg-secondary)] text-[var(--text-secondary)]",
+  intermediate: "bg-blue-500/15 text-blue-400",
+  advanced: "bg-purple-500/15 text-purple-400",
+  expert: "bg-green-500/15 text-green-400",
 };
 
 const SOURCE_LABELS: Record<Skill["source"], { label: string; className: string }> = {
   resume_parsed: {
     label: "Parsed from resume",
-    className: "bg-amber-100 text-amber-700",
+    className: "bg-amber-500/15 text-amber-400",
   },
   manual: {
     label: "Manually added",
-    className: "bg-indigo-100 text-indigo-700",
+    className: "bg-indigo-500/15 text-indigo-400",
   },
 };
 
@@ -281,7 +281,7 @@ export default function SkillProfile({ onSkillsChanged }: SkillProfileProps) {
       <section aria-label="Skill profile" className="w-full">
         <div className="flex items-center justify-center py-8" role="status" aria-live="polite">
           <svg
-            className="h-6 w-6 animate-spin text-blue-600"
+            className="h-6 w-6 animate-spin text-[var(--accent)]"
             fill="none"
             viewBox="0 0 24 24"
             aria-hidden="true"
@@ -300,7 +300,7 @@ export default function SkillProfile({ onSkillsChanged }: SkillProfileProps) {
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             />
           </svg>
-          <span className="ml-2 text-sm text-gray-600">Loading skill profile...</span>
+          <span className="ml-2 text-sm text-[var(--text-secondary)]">Loading skill profile...</span>
         </div>
       </section>
     );
@@ -311,7 +311,7 @@ export default function SkillProfile({ onSkillsChanged }: SkillProfileProps) {
       {/* Error banner */}
       {error && (
         <div
-          className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700"
+          className="mb-4 rounded-xl bg-[var(--error-bg)] p-3 text-sm text-[var(--error-text)]"
           role="alert"
           aria-live="assertive"
         >
@@ -336,13 +336,13 @@ export default function SkillProfile({ onSkillsChanged }: SkillProfileProps) {
       )}
 
       {/* Add skill form */}
-      <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
-        <h3 className="mb-3 text-sm font-semibold text-gray-700">Add a Skill</h3>
+      <div className="mb-4 rounded-xl border border-[var(--border-input)] bg-[var(--bg-card-solid)] p-3">
+        <h3 className="mb-2 text-sm font-semibold text-[var(--text-primary)]">Add a Skill</h3>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1">
             <label
               htmlFor="skill-name-input"
-              className="mb-1 block text-xs font-medium text-gray-600"
+              className="mb-1 block text-xs font-medium text-[var(--text-secondary)]"
             >
               Skill Name
             </label>
@@ -361,7 +361,7 @@ export default function SkillProfile({ onSkillsChanged }: SkillProfileProps) {
                 }
               }}
               placeholder="e.g., React, Python, Project Management"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="input-glass w-full px-3 py-2 text-sm"
               disabled={isAdding}
               aria-describedby={addError ? "add-skill-error" : undefined}
               aria-invalid={addError ? "true" : undefined}
@@ -371,7 +371,7 @@ export default function SkillProfile({ onSkillsChanged }: SkillProfileProps) {
           <div className="sm:w-40">
             <label
               htmlFor="proficiency-select"
-              className="mb-1 block text-xs font-medium text-gray-600"
+              className="mb-1 block text-xs font-medium text-[var(--text-secondary)]"
             >
               Proficiency
             </label>
@@ -379,7 +379,7 @@ export default function SkillProfile({ onSkillsChanged }: SkillProfileProps) {
               id="proficiency-select"
               value={newSkillProficiency}
               onChange={(e) => setNewSkillProficiency(e.target.value as ProficiencyLevel)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="input-glass w-full px-3 py-2 text-sm"
               disabled={isAdding}
             >
               {PROFICIENCY_LEVELS.map((level) => (
@@ -394,7 +394,7 @@ export default function SkillProfile({ onSkillsChanged }: SkillProfileProps) {
             type="button"
             onClick={handleAddSkill}
             disabled={isAdding || !newSkillName.trim()}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--accent-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Add skill"
           >
             {isAdding ? "Adding..." : "Add Skill"}
@@ -402,18 +402,18 @@ export default function SkillProfile({ onSkillsChanged }: SkillProfileProps) {
         </div>
 
         {addError && (
-          <p id="add-skill-error" className="mt-2 text-xs text-red-600" role="alert">
+          <p id="add-skill-error" className="mt-2 text-xs text-[var(--error-text)]" role="alert">
             {addError}
           </p>
         )}
       </div>
 
       {/* Skills list */}
-      <div className="rounded-lg border border-gray-200 bg-white">
-        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-          <h3 className="text-sm font-semibold text-gray-700">
+      <div className="rounded-xl border border-[var(--border-input)] bg-[var(--bg-card-solid)]">
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-4 py-2">
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">
             Your Skills{" "}
-            <span className="font-normal text-gray-500">({skills.length})</span>
+            <span className="font-normal text-[var(--text-muted)]">({skills.length})</span>
           </h3>
           {skills.length > 0 && (
             <button
@@ -432,7 +432,7 @@ export default function SkillProfile({ onSkillsChanged }: SkillProfileProps) {
                   onSkillsChanged?.();
                 }
               }}
-              className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+              className="rounded px-2 py-1 text-xs font-medium text-[var(--error-text)] hover:bg-[var(--error-bg)]"
             >
               Clear All
             </button>
@@ -441,8 +441,8 @@ export default function SkillProfile({ onSkillsChanged }: SkillProfileProps) {
 
         {/* Legend */}
         {skills.length > 0 && (
-          <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 px-4 py-2 text-xs text-gray-500">
-            <span className="font-medium text-gray-600">Legend:</span>
+          <div className="flex flex-wrap items-center gap-3 border-b border-[var(--border-subtle)] px-4 py-2 text-xs text-[var(--text-muted)]">
+            <span className="font-medium text-[var(--text-secondary)]">Legend:</span>
             <span className="inline-flex items-center gap-1">
               <span className="inline-block h-2.5 w-2.5 rounded-full bg-gray-300" />
               Beginner
@@ -463,14 +463,14 @@ export default function SkillProfile({ onSkillsChanged }: SkillProfileProps) {
         )}
 
         {skills.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm text-gray-500">
+          <div className="px-4 py-8 text-center text-sm text-[var(--text-muted)]">
             <p>No skills added yet.</p>
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="mt-1 text-xs text-[var(--text-muted)]">
               Upload a resume to auto-extract skills, or add them manually above.
             </p>
           </div>
         ) : (
-          <div className="flex flex-wrap gap-2 p-4" role="list" aria-label="Skills list">
+          <div className="max-h-[240px] overflow-y-auto flex flex-wrap gap-2 p-4" role="list" aria-label="Skills list">
             {skills.map((skill) => {
               const stat = jobSkillStats.get(skill.name.toLowerCase());
               const jobPercent = stat ? Math.round((stat.jobCount / stat.totalJobs) * 100) : 0;

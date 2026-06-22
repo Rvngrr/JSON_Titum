@@ -20,7 +20,7 @@ export default function ApplicationStatusBadge({
   if (applied && applicationStatus === "applied_externally") {
     return (
       <span
-        className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-sm font-medium text-purple-800"
+        className="inline-flex items-center rounded-full border border-purple-500/30 bg-purple-500/15 px-2.5 py-0.5 text-sm font-medium text-purple-400"
         aria-label="Application status: Applied Externally"
       >
         <svg
@@ -45,7 +45,7 @@ export default function ApplicationStatusBadge({
   if (applied) {
     return (
       <span
-        className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-sm font-medium text-green-800"
+        className="inline-flex items-center rounded-full border border-[var(--success)] bg-[var(--success-bg)] px-2.5 py-0.5 text-sm font-medium text-[var(--success-text)]"
         aria-label="Application status: Applied"
       >
         Applied
@@ -55,7 +55,7 @@ export default function ApplicationStatusBadge({
 
   return (
     <span
-      className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-sm font-medium text-gray-800"
+      className="inline-flex items-center rounded-full border border-[var(--border-input)] bg-[var(--bg-secondary)] px-2.5 py-0.5 text-sm font-medium text-[var(--text-muted)]"
       aria-label="Application status: Not Applied"
     >
       Not Applied

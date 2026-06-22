@@ -270,16 +270,18 @@ export default function ApplicantDashboardPage() {
   // Loading State
   if (loading) {
     return (
-      <main className="flex-1 p-6 md:p-8">
+      <main className="flex-1 p-6 md:p-10">
+        <div className="mx-auto max-w-5xl">
         <div className="mb-6">
           <div className="h-6 w-64 animate-pulse rounded-lg bg-[var(--border-subtle)]" />
           <div className="mt-2 h-4 w-40 animate-pulse rounded-lg bg-[var(--border-subtle)]" />
         </div>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <SkeletonCard className="lg:row-span-1" />
-          <SkeletonCard className="lg:row-span-1" />
+        <div className="grid gap-5 md:grid-cols-2">
           <SkeletonCard />
           <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
         </div>
       </main>
     );
@@ -288,7 +290,8 @@ export default function ApplicantDashboardPage() {
   // Error State
   if (error) {
     return (
-      <main className="flex-1 p-6 md:p-8">
+      <main className="flex-1 p-6 md:p-10">
+        <div className="mx-auto max-w-5xl">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -308,6 +311,7 @@ export default function ApplicantDashboardPage() {
             Try Again
           </button>
         </motion.div>
+        </div>
       </main>
     );
   }
@@ -315,7 +319,8 @@ export default function ApplicantDashboardPage() {
   // No Data State
   if (!hasProfile || !data) {
     return (
-      <main className="flex-1 p-6 md:p-8">
+      <main className="flex-1 p-6 md:p-10">
+        <div className="mx-auto max-w-5xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -334,40 +339,44 @@ export default function ApplicantDashboardPage() {
             Upload Resume
           </Link>
         </motion.div>
+        </div>
       </main>
     );
   }
 
   // Main Dashboard
   return (
-    <main className="flex-1 p-6 md:p-8">
+    <main className="flex-1 p-6 md:p-10">
+      <div className="mx-auto max-w-5xl space-y-8">
       {/* Header */}
-      <motion.div
+      <motion.header
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
       >
         <h1 className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)]">
           Resume Analysis Results
         </h1>
         <p className="mt-1 text-sm text-[var(--text-secondary)]">{formatDate()}</p>
-      </motion.div>
+      </motion.header>
 
       {/* Dashboard Grid */}
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="grid gap-6 lg:grid-cols-2"
+        className="grid gap-5 md:grid-cols-2"
       >
         {/* ATS Score Card */}
-        <motion.div variants={itemVariants} className="glass-card p-6">
-          <div className="flex flex-col items-center text-center">
+        <motion.div variants={itemVariants} className="glass-card p-6 flex flex-col">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)] mb-4 flex items-center gap-2">
+            <svg className="h-4 w-4 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Resume ATS Score
+          </h2>
+          <div className="flex-1 flex flex-col items-center justify-center text-center">
             <ATSGauge score={data.atsScore} />
-            <h2 className="mt-4 text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)]">
-              Resume ATS Score
-            </h2>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">
+            <p className="mt-2 text-xs text-[var(--text-muted)]">
               Based on {data.totalJobs} targeted job description
               {data.totalJobs !== 1 ? "s" : ""}
             </p>
@@ -384,8 +393,11 @@ export default function ApplicantDashboardPage() {
         </motion.div>
 
         {/* Skills Overview Card */}
-        <motion.div variants={itemVariants} className="glass-card p-6">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)] mb-4">
+        <motion.div variants={itemVariants} className="glass-card p-6 flex flex-col justify-center">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)] mb-4 flex items-center gap-2">
+            <svg className="h-4 w-4 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
             Your Skills
           </h2>
           {data.skills.length > 0 ? (
@@ -428,8 +440,11 @@ export default function ApplicantDashboardPage() {
         </motion.div>
 
         {/* Hidden Gems Card */}
-        <motion.div variants={itemVariants} className="glass-card p-6">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)] mb-4">
+        <motion.div variants={itemVariants} className="glass-card p-6 flex flex-col justify-center">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)] mb-4 flex items-center gap-2">
+            <svg className="h-4 w-4 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            </svg>
             Hidden Gems — Skills to Learn
           </h2>
           {data.hiddenGems.length > 0 ? (
@@ -456,8 +471,11 @@ export default function ApplicantDashboardPage() {
         </motion.div>
 
         {/* Skill ROI Card */}
-        <motion.div variants={itemVariants} className="glass-card p-6">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)] mb-4">
+        <motion.div variants={itemVariants} className="glass-card p-6 flex flex-col justify-center">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)] mb-4 flex items-center gap-2">
+            <svg className="h-4 w-4 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
             Skill ROI — Projected Impact
           </h2>
           {data.skillROI.length > 0 ? (
@@ -484,23 +502,29 @@ export default function ApplicantDashboardPage() {
         </motion.div>
 
         {/* Quick Actions */}
-        <motion.div variants={itemVariants} className="glass-card p-6 lg:col-span-2">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)] mb-4">
+        <motion.div variants={itemVariants} className="glass-card p-6 md:col-span-2 flex flex-col">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)] mb-4 flex items-center gap-2">
+            <svg className="h-4 w-4 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+            </svg>
             Quick Actions
           </h2>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/applicant/jobs" className="btn-primary text-xs">
-              Browse Jobs
-            </Link>
-            <Link href="/applicant/profile" className="btn-secondary text-xs">
-              Update Profile
-            </Link>
-            <Link href="/applicant/career-goals" className="btn-secondary text-xs">
-              Set Career Goals
-            </Link>
+          <div className="flex-1 flex items-center">
+            <div className="flex flex-wrap gap-3">
+              <Link href="/applicant/jobs" className="btn-primary text-xs">
+                Browse Jobs
+              </Link>
+              <Link href="/applicant/profile" className="btn-secondary text-xs">
+                Update Profile
+              </Link>
+              <Link href="/applicant/career-goals" className="btn-secondary text-xs">
+                Set Career Goals
+              </Link>
+            </div>
           </div>
         </motion.div>
       </motion.div>
+      </div>
     </main>
   );
 }

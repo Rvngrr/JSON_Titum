@@ -206,10 +206,10 @@ export default function ResumeUpload({
     <section aria-label="Resume upload" className="w-full">
       {/* Current resume display */}
       {currentFilename && status !== "uploading" && status !== "parsing" && (
-        <div className="mb-3 flex items-center justify-between rounded-md border border-green-200 bg-green-50 p-3">
-          <div className="flex items-center gap-2 text-sm text-gray-700">
+        <div className="mb-3 flex items-center justify-between rounded-xl border border-[var(--success)] bg-[var(--success-bg)] p-3">
+          <div className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
             <svg
-              className="h-5 w-5 text-green-600"
+              className="h-5 w-5 text-[var(--success)]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -245,7 +245,7 @@ export default function ResumeUpload({
                 alert("Failed to open resume.");
               }
             }}
-            className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+            className="rounded-xl bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white hover:bg-[var(--accent-hover)]"
           >
             View Resume
           </button>
@@ -270,17 +270,17 @@ export default function ResumeUpload({
         }}
         className={`relative flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors ${
           isDragOver
-            ? "border-blue-500 bg-blue-50"
+            ? "border-[var(--accent)] bg-[var(--accent-light)]"
             : status === "error"
-              ? "border-red-300 bg-red-50"
+              ? "border-[var(--error)] bg-[var(--error-bg)]"
               : status === "success"
-                ? "border-green-300 bg-green-50"
-                : "border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100"
+                ? "border-[var(--success)] bg-[var(--success-bg)]"
+                : "border-[var(--border-input)] bg-[var(--bg-secondary)] hover:border-[var(--text-muted)] hover:bg-[var(--bg-card-solid)]"
         } ${isProcessing ? "pointer-events-none opacity-60" : ""}`}
       >
         {/* Upload icon */}
         <svg
-          className="mb-3 h-10 w-10 text-gray-400"
+          className="mb-3 h-10 w-10 text-[var(--text-muted)]"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -294,10 +294,10 @@ export default function ResumeUpload({
           />
         </svg>
 
-        <p id="upload-instructions" className="mb-1 text-sm text-gray-600">
-          <span className="font-semibold text-blue-600">Click to browse</span> or drag and drop
+        <p id="upload-instructions" className="mb-1 text-sm text-[var(--text-secondary)]">
+          <span className="font-semibold text-[var(--accent)]">Click to browse</span> or drag and drop
         </p>
-        <p className="text-xs text-gray-500">PDF or DOCX (max 5MB)</p>
+        <p className="text-xs text-[var(--text-muted)]">PDF or DOCX (max 5MB)</p>
 
         {/* Hidden file input */}
         <input
@@ -314,7 +314,7 @@ export default function ResumeUpload({
       {/* Progress indicator */}
       {isProcessing && (
         <div className="mt-3" role="status" aria-live="polite" aria-label="Upload progress">
-          <div className="mb-1 flex items-center justify-between text-sm text-gray-600">
+          <div className="mb-1 flex items-center justify-between text-sm text-[var(--text-secondary)]">
             <span>
               {status === "validating" && "Validating file..."}
               {status === "uploading" && "Uploading resume..."}
@@ -322,9 +322,9 @@ export default function ResumeUpload({
             </span>
             <span>{uploadProgress}%</span>
           </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--border-subtle)]">
             <div
-              className="h-full rounded-full bg-blue-600 transition-all duration-300"
+              className="h-full rounded-full bg-[var(--accent)] transition-all duration-300"
               style={{ width: `${uploadProgress}%` }}
             />
           </div>
@@ -334,7 +334,7 @@ export default function ResumeUpload({
       {/* Success message */}
       {status === "success" && (
         <div
-          className="mt-3 flex items-center gap-2 rounded-md bg-green-50 p-3 text-sm text-green-700"
+          className="mt-3 flex items-center gap-2 rounded-md bg-[var(--success-bg)] p-3 text-sm text-[var(--success-text)]"
           role="status"
           aria-live="polite"
         >
@@ -353,7 +353,7 @@ export default function ResumeUpload({
       {/* Error message */}
       {status === "error" && error && (
         <div
-          className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-700"
+          className="mt-3 rounded-md bg-[var(--error-bg)] p-3 text-sm text-[var(--error-text)]"
           role="alert"
           aria-live="assertive"
         >
@@ -375,7 +375,7 @@ export default function ResumeUpload({
             <div>
               <p>{error}</p>
               {error.includes("manually") && (
-                <p className="mt-1 text-xs text-red-600">
+                <p className="mt-1 text-xs text-[var(--error-text)]">
                   You can add your skills manually using the skill profile editor below.
                 </p>
               )}

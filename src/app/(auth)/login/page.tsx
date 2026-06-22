@@ -9,7 +9,7 @@ import ThemeToggle from "@/components/shared/ThemeToggle";
 export default function LoginPage() {
   return (
     <main className="relative flex min-h-screen items-center justify-center bg-hero-gradient px-4 py-12">
-      <FloatingOrbs density="high" />
+      <FloatingOrbs />
 
       {/* Theme toggle in top-right */}
       <div className="absolute right-4 top-4 z-20 md:right-8 md:top-6">
@@ -25,11 +25,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent-teal to-periwinkle">
-              <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
+            <img src="/careerflow.png" alt="CareerFlow logo" className="h-8 w-8 rounded-lg object-contain" />
             <span className="text-xl font-bold text-[var(--text-primary)]">CareerFlow</span>
           </Link>
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">Welcome back</h1>

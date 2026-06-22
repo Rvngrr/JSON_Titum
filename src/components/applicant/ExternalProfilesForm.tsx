@@ -67,7 +67,7 @@ export default function ExternalProfilesForm({
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded-md bg-red-50 p-3 text-sm text-red-700" role="alert">
+        <div className="rounded-xl bg-[var(--error-bg)] p-3 text-sm text-[var(--error-text)]" role="alert">
           {error}
         </div>
       )}
@@ -77,7 +77,7 @@ export default function ExternalProfilesForm({
           <div key={field.key}>
             <label
               htmlFor={`external-url-${field.key}`}
-              className="mb-1 flex items-center gap-1.5 text-xs font-medium text-gray-600"
+              className="mb-1 flex items-center gap-1.5 text-xs font-medium text-[var(--text-secondary)]"
             >
               <span>{field.icon}</span>
               {field.label}
@@ -88,7 +88,7 @@ export default function ExternalProfilesForm({
               value={getters[field.key]}
               onChange={(e) => setters[field.key](e.target.value)}
               placeholder={field.placeholder}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="input-glass w-full px-3 py-2 text-sm"
               disabled={disabled}
             />
           </div>
@@ -99,7 +99,7 @@ export default function ExternalProfilesForm({
         type="button"
         onClick={handleSave}
         disabled={disabled || saving}
-        className="rounded-md bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        className="btn-primary text-xs !py-2 !px-4 disabled:opacity-50"
       >
         {saving ? "Saving..." : "Save Links"}
       </button>

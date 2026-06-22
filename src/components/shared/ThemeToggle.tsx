@@ -23,7 +23,7 @@ export default function ThemeToggle() {
       type="button"
       onClick={() => setTheme(nextTheme[theme])}
       aria-label={`Theme: ${labels[theme]}. Click to switch.`}
-      className="glass-card flex h-8 items-center gap-2 !rounded-[24px] !border-[rgba(255,255,255,0.6)] px-3.5 text-[var(--text-secondary)] shadow-[0_4px_14px_rgba(91,192,190,0.1)] transition-all hover:shadow-[0_6px_20px_rgba(91,192,190,0.25)] hover:text-[var(--accent)]"
+      className="flex h-8 items-center gap-2 rounded-[24px] border border-[var(--border-glass)] bg-[var(--bg-card)] px-3.5 text-[var(--text-secondary)] backdrop-blur-sm transition-all hover:text-[var(--accent)] hover:border-[var(--accent)]"
     >
       <AnimatePresence mode="wait" initial={false}>
         {theme === "light" && (
