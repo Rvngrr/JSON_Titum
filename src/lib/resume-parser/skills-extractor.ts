@@ -198,6 +198,7 @@ const SKILL_SCAN_MAP = buildSkillScanMap();
 /**
  * Scan prose/sentence lines for known skill mentions (from taxonomy).
  * Returns array of { rawName, canonical } found.
+ * Uses word-boundary matching to avoid false positives.
  */
 function scanLinesForSkills(lines: string[]): Array<{ rawName: string; canonical: string }> {
   const found: Array<{ rawName: string; canonical: string }> = [];
@@ -207,10 +208,15 @@ function scanLinesForSkills(lines: string[]): Array<{ rawName: string; canonical
 
   for (const [name, canonical] of SKILL_SCAN_MAP) {
     if (seen.has(canonical.toLowerCase())) continue;
-    // Use word-boundary-like check to avoid false positives on very short names
-    if (name.length <= 1) continue;
+    // Skip very short names to avoid false positives (e.g., "go" in "django", "r" in "react")
+    if (name.length <= 2) continue;
 
-    if (joinedText.includes(name)) {
+    // Use word-boundary regex for names with 3+ chars to avoid substring false positives
+    // Escape special regex characters in skill names
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(?:^|[\\s,|;/()\\[\\]•\\-*])${escaped}(?:$|[\\s,|;/()\\[\\]•\\-*])`, 'i');
+
+    if (regex.test(joinedText)) {
       seen.add(canonical.toLowerCase());
       found.push({ rawName: name, canonical });
     }

@@ -8,36 +8,29 @@
  * Requirements: 12.1, 12.2, 12.3, 12.5, 12.7, 12.8
  */
 
-export type SkillCategory =
-  | 'Programming Languages'
-  | 'Frameworks'
-  | 'Cloud Platforms'
-  | 'Databases'
-  | 'DevOps'
-  | 'Data Science'
-  | 'Design'
-  | 'Soft Skills'
-  | 'Testing'
-  | 'Security'
-  | 'Mobile'
-  | 'Other';
+import {
+  CULINARY_HOSPITALITY,
+  EDUCATION_TEACHING,
+  CONSTRUCTION_TRADES,
+  AGRICULTURE,
+  AUTOMOTIVE,
+  AVIATION,
+  FITNESS_WELLNESS,
+  SALES_MARKETING,
+  HUMAN_RESOURCES,
+  LEGAL,
+  ARTS_CREATIVE,
+  ENGINEERING,
+  ACCOUNTING_FINANCE,
+  HEALTHCARE_CLINICAL,
+  MANUFACTURING,
+  LOGISTICS_SUPPLY_CHAIN,
+  PUBLIC_RELATIONS,
+  RETAIL_SERVICE,
+} from './multi-industry-skills';
 
-export type IndustryId =
-  | 'software-engineering'
-  | 'data-science'
-  | 'devops'
-  | 'finance'
-  | 'healthcare'
-  | 'cybersecurity'
-  | 'mobile-development'
-  | 'game-development';
-
-export interface SkillEntry {
-  canonical: string;
-  synonyms: string[];
-  category: SkillCategory;
-  industries: IndustryId[];
-}
+import type { SkillEntry, SkillCategory } from './skills-types';
+export type { SkillCategory, IndustryId, SkillEntry } from './skills-types';
 
 // ─── Programming Languages ───────────────────────────────────────────────────
 
@@ -311,7 +304,6 @@ const OTHER: SkillEntry[] = [
   { canonical: 'Streamlit', synonyms: ['streamlit app', 'streamlit framework'], category: 'Other', industries: ['data-science', 'software-engineering'] },
   { canonical: 'Excel', synonyms: ['microsoft excel', 'ms excel', 'spreadsheets', 'xlsx'], category: 'Other', industries: ['data-science', 'finance'] },
   { canonical: 'GitHub', synonyms: ['github', 'gh'], category: 'Other', industries: ['software-engineering', 'devops'] },
-  { canonical: 'C#', synonyms: ['csharp', 'c sharp', 'c#', 'dotnet c#'], category: 'Other', industries: ['software-engineering', 'game-development'] },
   { canonical: 'C/C++', synonyms: ['c/c++', 'c and c++', 'c & c++'], category: 'Other', industries: ['software-engineering', 'game-development'] },
 ];
 
@@ -330,6 +322,25 @@ export const SKILLS_TAXONOMY: SkillEntry[] = [
   ...MOBILE,
   ...SOFT_SKILLS,
   ...OTHER,
+  // Multi-industry additions
+  ...CULINARY_HOSPITALITY,
+  ...EDUCATION_TEACHING,
+  ...CONSTRUCTION_TRADES,
+  ...AGRICULTURE,
+  ...AUTOMOTIVE,
+  ...AVIATION,
+  ...FITNESS_WELLNESS,
+  ...SALES_MARKETING,
+  ...HUMAN_RESOURCES,
+  ...LEGAL,
+  ...ARTS_CREATIVE,
+  ...ENGINEERING,
+  ...ACCOUNTING_FINANCE,
+  ...HEALTHCARE_CLINICAL,
+  ...MANUFACTURING,
+  ...LOGISTICS_SUPPLY_CHAIN,
+  ...PUBLIC_RELATIONS,
+  ...RETAIL_SERVICE,
 ];
 
 // ─── Pre-built Lookup Map (O(1) access) ─────────────────────────────────────
