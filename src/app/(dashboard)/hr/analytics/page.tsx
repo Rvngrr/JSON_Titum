@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import HRInsightsCard from "@/components/hr/HRInsightsCard";
 
 // ============================================================================
 // Types
@@ -240,6 +241,9 @@ export default function AnalyticsPage() {
       </motion.div>
 
       <div className="mt-8 space-y-8">
+        {/* AI Platform Insights */}
+        <HRInsightsCard />
+
         {/* Platform Overview */}
         <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <h2 className="mb-4 text-sm font-semibold text-[var(--text-primary)]">Platform Overview</h2>
