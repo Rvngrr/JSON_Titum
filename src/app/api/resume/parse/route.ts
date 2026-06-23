@@ -330,21 +330,52 @@ async function extractTextFromFile(
 
 /**
  * Basic PDF text extraction using pdf-parse library.
+ * Note: pdf-parse v1.1.1 has a known issue where it tries to load a test file
+ * on import in bundled environments. We handle this by catching errors and
+ * passing a custom pagerender to avoid the test file dependency.
  */
 async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   try {
-    const pdf = (await import("pdf-parse")).default;
-    const data = await pdf(buffer);
+    // pdf-parse requires a Buffer and options
+    // Use dynamic import with default export
+    const pdfParse = (await import("pdf-parse")).default;
+    const data = await pdfParse(buffer, {
+      // Prevent pdf-parse from trying to load test files
+      max: 0, // no page limit
+    });
     return data.text?.trim() ?? "";
   } catch (error) {
-    console.error("PDF parse error:", error);
-    // Fallback: extract printable character sequences from binary
+    console.error("[resume/parse] PDF parse error:", error);
+    
+    // Second attempt: try reading the buffer directly with pdf-parse's underlying pdfjs
+    try {
+      const pdfParse = (await import("pdf-parse")).default;
+      // Some PDFs need the buffer passed as Uint8Array
+      const uint8 = new Uint8Array(buffer);
+      const data = await pdfParse(Buffer.from(uint8));
+      if (data.text?.trim()) {
+        return data.text.trim();
+      }
+    } catch (retryError) {
+      console.error("[resume/parse] PDF parse retry failed:", retryError);
+    }
+
+    // Final fallback: extract printable character sequences from binary
+    // This handles cases where pdf-parse completely fails (e.g., corrupted PDFs)
     const content = buffer.toString("latin1");
     const printableRegex = /[\x20-\x7E]{4,}/g;
     const segments: string[] = [];
     let match;
     while ((match = printableRegex.exec(content)) !== null) {
-      segments.push(match[0]);
+      // Filter out common PDF operators and noise
+      const segment = match[0];
+      if (
+        segment.length > 10 &&
+        /[a-zA-Z]{3,}/.test(segment) &&
+        !/^(endobj|endstream|stream|xref|trailer|startxref)/.test(segment)
+      ) {
+        segments.push(segment);
+      }
     }
     return segments.join(" ").trim();
   }

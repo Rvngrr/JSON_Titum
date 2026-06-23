@@ -170,7 +170,7 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </div>
-                <span className="text-xl font-bold text-[var(--text-primary)]">Jane Doe</span>
+                <span className="text-xl font-bold text-[var(--text-primary)]">JSON Titum</span>
               </div>
               <div className="mt-5">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">Key Skills</p>
