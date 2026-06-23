@@ -25,8 +25,16 @@ const cardFloat: Variants = {
 };
 
 export default function Home() {
+  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-hero-gradient">
+    <div className="relative flex flex-col overflow-x-hidden bg-hero-gradient">
       <FloatingOrbs density="high" />
 
       {/* Navigation */}
@@ -44,13 +52,13 @@ export default function Home() {
         </div>
 
         <div className="hidden items-center gap-6 md:flex">
-          <a href="#how-it-works" className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+          <a href="#how-it-works" onClick={(e) => scrollToSection(e, "how-it-works")} className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
             How It Works
           </a>
-          <a href="#features" className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+          <a href="#features" onClick={(e) => scrollToSection(e, "features")} className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
             Features
           </a>
-          <a href="#for-companies" className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+          <a href="#for-companies" onClick={(e) => scrollToSection(e, "for-companies")} className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
             For Companies
           </a>
           <ThemeToggle />
@@ -74,8 +82,8 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero Section — vertically centered */}
-      <main className="relative z-10 flex flex-1 items-center justify-center px-6 md:px-16">
+      {/* Hero Section — full viewport height */}
+      <main className="relative z-10 flex min-h-screen items-center justify-center px-6 md:px-16">
         <div className="flex w-full max-w-6xl flex-col gap-8 py-12 lg:flex-row lg:items-center lg:justify-center lg:gap-16">
           {/* Left: Text Content */}
           <div className="max-w-xl flex-1">
@@ -241,6 +249,218 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      {/* How It Works Section */}
+      <section id="how-it-works" className="relative z-10 min-h-screen flex items-center px-6 py-24 md:px-16">
+        <div className="mx-auto w-full max-w-6xl">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.7 }}
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+              How It Works
+            </p>
+            <h2 className="mt-4 text-4xl font-bold text-[var(--text-primary)] md:text-5xl">
+              Three Simple Steps
+            </h2>
+            <p className="mt-4 max-w-2xl text-lg text-[var(--text-secondary)]">
+              Our AI-powered platform connects your skills with the right opportunities in minutes, not months.
+            </p>
+          </motion.div>
+
+          <div className="mt-16 grid gap-8 md:grid-cols-3">
+            {[
+              {
+                step: "01",
+                title: "Upload Your Resume",
+                description: "Upload your resume or fill in your profile. Our AI parses your skills, experience, and career goals automatically.",
+                icon: (
+                  <svg className="h-8 w-8 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                ),
+              },
+              {
+                step: "02",
+                title: "Get AI-Matched Jobs",
+                description: "Our algorithms analyze job requirements against your profile to surface the best-fit opportunities with a match score.",
+                icon: (
+                  <svg className="h-8 w-8 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                ),
+              },
+              {
+                step: "03",
+                title: "Apply & Track",
+                description: "Apply to matched positions with one click and track your application progress all in one dashboard.",
+                icon: (
+                  <svg className="h-8 w-8 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ),
+              },
+            ].map((item, i) => (
+              <motion.div
+                key={item.step}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.6, delay: i * 0.15 }}
+                className="glass-card p-8"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+                  {item.icon}
+                </div>
+                <p className="mt-5 text-sm font-bold text-[var(--accent)]">{item.step}</p>
+                <h3 className="mt-2 text-xl font-bold text-[var(--text-primary)]">{item.title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-[var(--text-secondary)]">{item.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="relative z-10 min-h-screen flex items-center px-6 py-24 md:px-16">
+        <div className="mx-auto w-full max-w-6xl">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.7 }}
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+              Features
+            </p>
+            <h2 className="mt-4 text-4xl font-bold text-[var(--text-primary)] md:text-5xl">
+              Built for Job Seekers
+            </h2>
+            <p className="mt-4 max-w-2xl text-lg text-[var(--text-secondary)]">
+              Everything you need to land your dream role, powered by intelligent matching and career insights.
+            </p>
+          </motion.div>
+
+          <div className="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                title: "AI Match Scoring",
+                description: "Get a percentage match score for every job based on your skills, experience, and preferences.",
+              },
+              {
+                title: "Resume Parsing",
+                description: "Upload any resume format and our AI extracts your skills, roles, education, and certifications.",
+              },
+              {
+                title: "Skill Gap Analysis",
+                description: "See which skills you need to develop for your target roles with actionable recommendations.",
+              },
+              {
+                title: "Career Goal Tracking",
+                description: "Set career goals and track progress with personalized milestones and AI-driven suggestions.",
+              },
+              {
+                title: "Application Dashboard",
+                description: "Track all your applications in one place with status updates and follow-up reminders.",
+              },
+              {
+                title: "Skill ROI Calculator",
+                description: "Understand which skills will give you the highest return on investment for your career path.",
+              },
+            ].map((feature, i) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.6, delay: i * 0.1 }}
+                className="glass-card p-7"
+              >
+                <h3 className="text-lg font-bold text-[var(--text-primary)]">{feature.title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-[var(--text-secondary)]">{feature.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* For Companies Section */}
+      <section id="for-companies" className="relative z-10 min-h-screen flex items-center px-6 py-24 md:px-16">
+        <div className="mx-auto w-full max-w-6xl">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.7 }}
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+              For Companies
+            </p>
+            <h2 className="mt-4 text-4xl font-bold text-[var(--text-primary)] md:text-5xl">
+              Hire Smarter, Faster
+            </h2>
+            <p className="mt-4 max-w-2xl text-lg text-[var(--text-secondary)]">
+              Our HR dashboard gives hiring teams AI-powered tools to find the best candidates from your applicant pool.
+            </p>
+          </motion.div>
+
+          <div className="mt-16 grid gap-8 md:grid-cols-2">
+            {[
+              {
+                title: "AI-Ranked Applicants",
+                description: "Automatically rank candidates by fit score against your job requirements. No more manual resume screening.",
+              },
+              {
+                title: "Job Posting Management",
+                description: "Create, edit, and manage job postings with AI-assisted requirement generation and bulk import.",
+              },
+              {
+                title: "Hiring Analytics",
+                description: "Track your hiring funnel, time-to-fill, and source effectiveness with real-time analytics dashboards.",
+              },
+              {
+                title: "Bulk Job Import",
+                description: "Import jobs from LinkedIn, Indeed, and other platforms directly into your dashboard via API integrations.",
+              },
+            ].map((item, i) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.6, delay: i * 0.15 }}
+                className="glass-card p-8"
+              >
+                <h3 className="text-xl font-bold text-[var(--text-primary)]">{item.title}</h3>
+                <p className="mt-3 text-base leading-relaxed text-[var(--text-secondary)]">{item.description}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="mt-12 flex flex-wrap gap-4"
+          >
+            <Link
+              href="/register"
+              className="btn-primary inline-flex items-center text-sm uppercase tracking-wide"
+            >
+              Get Started as Job Curator
+            </Link>
+            <Link
+              href="/login"
+              className="btn-secondary inline-flex items-center text-sm uppercase tracking-wide"
+            >
+              Sign In
+            </Link>
+          </motion.div>
+        </div>
+      </section>
     </div>
   );
 }
