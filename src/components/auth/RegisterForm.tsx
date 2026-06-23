@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { validatePassword, validateEmail } from "@/lib/validators/auth";
@@ -21,6 +22,7 @@ export default function RegisterForm() {
   const [role, setRole] = useState<UserRole>("applicant");
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showVerificationNotice, setShowVerificationNotice] = useState(false);
 
   function validateForm(): boolean {
     const newErrors: FormErrors = {};
@@ -55,7 +57,7 @@ export default function RegisterForm() {
         }
         return;
       }
-      router.push("/login?message=Registration successful. Please check your email to confirm your account.");
+      setShowVerificationNotice(true);
     } catch {
       setErrors({ general: "An unexpected error occurred. Please try again." });
     } finally {
@@ -65,6 +67,28 @@ export default function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} aria-label="Registration form" className="w-full space-y-5" noValidate>
+      {/* Email Verification Notice */}
+      {showVerificationNotice && (
+        <div className="rounded-xl border border-[var(--accent)]/20 bg-[var(--accent)]/5 p-5 text-center space-y-3">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent)]/15">
+            <svg className="h-6 w-6 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">Check your email</h3>
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+            We&apos;ve sent a verification link to <span className="font-medium text-[var(--text-primary)]">{email}</span>. Please confirm your email address to activate your account.
+          </p>
+          <div className="pt-2">
+            <Link href="/login" className="text-xs font-medium text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">
+              Go to Sign In →
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {!showVerificationNotice && (
+        <>
       {errors.general && (
         <div role="alert" className="rounded-xl bg-[var(--error-bg)] p-3 text-sm text-[var(--error-text)]">
           {errors.general}
@@ -122,6 +146,8 @@ export default function RegisterForm() {
       <button type="submit" disabled={isSubmitting} className="btn-primary w-full text-sm">
         {isSubmitting ? "Creating account..." : "Create Account"}
       </button>
+        </>
+      )}
     </form>
   );
 }

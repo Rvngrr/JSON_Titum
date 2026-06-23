@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import InsightsCard from "@/components/applicant/InsightsCard";
 import type { MatchResult, Skill } from "@/types";
 
 // ============================================================================
@@ -432,13 +433,18 @@ export default function ApplicantDashboardPage() {
   if (!hasProfile || !data) {
     return (
       <main className="flex-1 relative min-h-screen">
-        {/* Centered blocking modal */}
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-secondary)]">
+        {/* Centered blocking modal with landing page background */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-hero-gradient overflow-hidden">
+          {/* Floating orbs matching landing page */}
+          <div className="absolute top-[10%] right-[15%] h-64 w-64 rounded-full bg-[var(--orb-pink)] opacity-40 blur-3xl" aria-hidden="true" />
+          <div className="absolute bottom-[15%] left-[10%] h-48 w-48 rounded-full bg-[var(--orb-blue)] opacity-40 blur-3xl" aria-hidden="true" />
+          <div className="absolute top-[40%] left-[30%] h-36 w-36 rounded-full bg-[var(--orb-lavender)] opacity-30 blur-3xl" aria-hidden="true" />
+
           <motion.div
             initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ type: "spring", stiffness: 260, damping: 24 }}
-            className="glass-card mx-4 max-w-md w-full p-8 text-center"
+            className="glass-card mx-4 max-w-md w-full p-8 text-center relative z-10"
           >
             {/* Icon */}
             <div className="mb-5 flex justify-center">
@@ -488,12 +494,11 @@ export default function ApplicantDashboardPage() {
 
   // Main Dashboard
   return (
-    <main className="flex-1 p-6 md:p-8">
+    <main className="flex-1 p-6 md:p-8 space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
       >
         <h1 className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)]">
           Resume Analysis Results
@@ -506,13 +511,13 @@ export default function ApplicantDashboardPage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="mb-8 flex flex-wrap items-center gap-3"
+        className="flex flex-wrap items-center gap-3"
       >
         <Link href="/applicant/jobs" className="flex items-center gap-2 rounded-full bg-[var(--bg-secondary)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] border border-[var(--border-subtle)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all">
           <svg className="h-4 w-4 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
-          Matched Jobs
+          Job Listings
         </Link>
         <Link href="/applicant/profile" className="flex items-center gap-2 rounded-full bg-[var(--bg-secondary)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] border border-[var(--border-subtle)] hover:border-purple-400 hover:text-purple-400 transition-all">
           <svg className="h-4 w-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -532,7 +537,17 @@ export default function ApplicantDashboardPage() {
           </svg>
           Applied Jobs
         </Link>
+        <Link href="/applicant/learning-paths" className="flex items-center gap-2 rounded-full bg-[var(--bg-secondary)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] border border-[var(--border-subtle)] hover:border-rose-400 hover:text-rose-400 transition-all">
+          <svg className="h-4 w-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422A12.083 12.083 0 0121 12.75v4.5M12 14v7.25M3.75 12.75v4.5a12.083 12.083 0 002.84 1.328L12 21.25" />
+          </svg>
+          Learning Paths
+        </Link>
       </motion.div>
+
+      {/* AI Career Insights */}
+      <InsightsCard />
 
       {/* Dashboard Grid */}
       <motion.div

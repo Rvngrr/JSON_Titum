@@ -42,7 +42,7 @@ const NAV_ITEMS = [
   },
   {
     href: "/applicant/jobs",
-    label: "Matched Jobs",
+    label: "Job Listings",
     iconColor: "text-green-400",
     icon: (
       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -57,6 +57,18 @@ const NAV_ITEMS = [
     icon: (
       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  {
+    href: "/applicant/learning-paths",
+    label: "Learning Paths",
+    iconColor: "text-rose-400",
+    icon: (
+      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422A12.083 12.083 0 0121 12.083V17.5a2.5 2.5 0 01-2.5 2.5h-13A2.5 2.5 0 013 17.5v-5.417c0-.956.112-1.886.84-3.083L12 14z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14v7" />
       </svg>
     ),
   },
@@ -75,7 +87,11 @@ export default function ApplicantLayout({
       <div>
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 mb-6">
-          <img src="/careerflow.png" alt="CareerFlow logo" className="h-7 w-7 rounded-lg object-contain" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-accent-teal to-periwinkle">
+            <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
           <span className="text-sm font-bold text-[var(--text-primary)]">CareerFlow</span>
         </Link>
 
@@ -119,12 +135,21 @@ export default function ApplicantLayout({
   );
 
   return (
-    <div className="flex min-h-screen bg-[var(--bg-secondary)] relative overflow-hidden">
-      <FloatingOrbs />
+    <div className="flex h-screen bg-[var(--bg-secondary)] relative overflow-hidden">
+      {/* Subtle background decoration */}
+      <FloatingOrbs showDots={false} orbs={[
+        { color: "bg-[var(--orb-pink)]", size: "h-48 w-48", x: "right-[-5%]", y: "top-[10%]", delay: 0, blur: "blur-3xl" },
+        { color: "bg-[var(--orb-blue)]", size: "h-40 w-40", x: "left-[40%]", y: "bottom-[-5%]", delay: 2, blur: "blur-3xl" },
+        { color: "bg-[var(--orb-lavender)]", size: "h-32 w-32", x: "right-[20%]", y: "bottom-[30%]", delay: 4, blur: "blur-3xl" },
+      ]} />
       {/* Mobile header */}
       <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-3 md:hidden sidebar-glass">
         <Link href="/" className="flex items-center gap-2">
-          <img src="/careerflow.png" alt="CareerFlow logo" className="h-7 w-7 rounded-lg object-contain" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-accent-teal to-periwinkle">
+            <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
           <span className="text-sm font-bold text-[var(--text-primary)]">CareerFlow</span>
         </Link>
         <button
@@ -175,13 +200,13 @@ export default function ApplicantLayout({
         )}
       </AnimatePresence>
 
-      {/* Desktop sidebar */}
-      <aside className="fixed top-0 left-0 hidden h-screen w-64 shrink-0 sidebar-glass p-6 md:block z-20">
+      {/* Desktop sidebar — fixed height, does not scroll with content */}
+      <aside className="hidden w-64 shrink-0 sidebar-glass p-6 md:block h-screen sticky top-0 overflow-y-auto">
         <nav className="h-full" aria-label="Applicant dashboard navigation">{navContent}</nav>
       </aside>
 
-      {/* Main content */}
-      <div className="flex-1 pt-14 md:pt-0 md:ml-64">
+      {/* Main content — independently scrollable */}
+      <div className="flex-1 pt-14 md:pt-0 overflow-y-auto h-screen">
         <ErrorBoundary>{children}</ErrorBoundary>
       </div>
     </div>

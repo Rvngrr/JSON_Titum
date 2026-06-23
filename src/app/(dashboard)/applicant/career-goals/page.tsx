@@ -339,7 +339,7 @@ export default function CareerGoalsPage() {
               </div>
 
               {/* Role Readiness Indicator */}
-              {roleReadiness && (
+              {roleReadiness && resumeFilename && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -420,7 +420,7 @@ export default function CareerGoalsPage() {
               )}
 
               {/* No skills message */}
-              {careerGoal && ROLE_EXPECTED_SKILLS[careerGoal] && userSkills.length === 0 && (
+              {careerGoal && ROLE_EXPECTED_SKILLS[careerGoal] && userSkills.length === 0 && resumeFilename && (
                 <div className="mt-6 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-4 text-center">
                   <p className="text-sm text-[var(--text-muted)]">
                     Upload your resume or add skills to your profile to see how ready you are for this role.
@@ -493,9 +493,53 @@ export default function CareerGoalsPage() {
                 Optional — we&apos;ll extract skills from your resume to better match you with jobs.
               </p>
               {resumeFilename && (
-                <p className="mb-4 text-sm text-[var(--success-text)]">
-                  Current resume: <strong>{resumeFilename}</strong>
-                </p>
+                <div className="mb-4 flex items-center justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <svg className="h-5 w-5 text-[var(--success)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="text-sm font-medium text-[var(--text-primary)]">{resumeFilename}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const supabase = createClient();
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) return;
+
+                      // Clear resume path in database
+                      await supabase
+                        .from("skill_profiles")
+                        .update({ resume_file_path: null, raw_resume_text: null, updated_at: new Date().toISOString() })
+                        .eq("user_id", user.id);
+
+                      // Delete skills that were parsed from resume
+                      const { data: profile } = await supabase
+                        .from("skill_profiles")
+                        .select("id")
+                        .eq("user_id", user.id)
+                        .single();
+
+                      if (profile) {
+                        await supabase
+                          .from("skills")
+                          .delete()
+                          .eq("skill_profile_id", profile.id)
+                          .eq("source", "resume_parsed");
+                      }
+
+                      setResumeFilename(null);
+                      setUserSkills([]);
+                    }}
+                    className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-[var(--error-text)] hover:bg-[var(--error-bg)] transition-colors"
+                    aria-label="Remove current resume"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Remove
+                  </button>
+                </div>
               )}
               <ResumeUpload onSkillsExtracted={() => {
                 // Update resumeFilename state so validation passes
@@ -510,6 +554,11 @@ export default function CareerGoalsPage() {
                   });
                 });
               }} />
+              {resumeFilename && (
+                <p className="mt-3 text-xs text-[var(--text-muted)]">
+                  Upload a new file above to replace your current resume.
+                </p>
+              )}
             </div>
           )}
         </motion.div>

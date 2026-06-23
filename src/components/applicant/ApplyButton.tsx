@@ -132,15 +132,11 @@ export default function ApplyButton({
     status === "applied_externally";
 
   const buttonLabel =
-    status === "applied"
+    status === "applied" || status === "applied_externally"
       ? "Applied"
-      : status === "applied_externally"
-        ? "Applied Externally"
-        : status === "submitting"
-          ? "Applying..."
-          : isExternalJob
-            ? "Apply Externally"
-            : "Apply";
+      : status === "submitting"
+        ? "Applying..."
+        : "Apply";
 
   return (
     <div className="flex flex-col items-start gap-1">
@@ -149,26 +145,18 @@ export default function ApplyButton({
         onClick={handleApplyClick}
         disabled={isDisabled}
         aria-label={
-          status === "applied"
+          status === "applied" || status === "applied_externally"
             ? "Already applied"
-            : status === "applied_externally"
-              ? "Already applied externally"
-              : status === "submitting"
-                ? "Submitting application"
-                : isExternalJob
-                  ? "Apply to this job externally"
-                  : "Apply to this job"
+            : status === "submitting"
+              ? "Submitting application"
+              : "Apply to this job"
         }
-        className={`inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium shadow-sm transition-colors ${
-          status === "applied"
-            ? "cursor-not-allowed border border-[var(--success)] bg-[var(--success-bg)] text-[var(--success-text)]"
-            : status === "applied_externally"
-              ? "cursor-not-allowed border border-purple-500/30 bg-purple-500/15 text-purple-400"
-              : status === "submitting"
-                ? "cursor-not-allowed border border-[var(--border-input)] bg-[var(--bg-secondary)] text-[var(--text-muted)]"
-                : isExternalJob
-                  ? "border border-purple-500 bg-purple-500 text-white hover:bg-purple-600"
-                  : "border border-[var(--accent)] bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]"
+        className={`inline-flex items-center rounded-md px-4 py-2 text-sm font-medium shadow-sm transition-colors ${
+          status === "applied" || status === "applied_externally"
+            ? "cursor-not-allowed border border-green-300 bg-green-50 text-green-700"
+            : status === "submitting"
+              ? "cursor-not-allowed border border-gray-300 bg-gray-100 text-gray-500"
+              : "border border-[var(--accent)] bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]"
         }`}
       >
         {status === "submitting" && (
@@ -207,7 +195,7 @@ export default function ApplyButton({
             />
           </svg>
         )}
-        {isExternalJob && status === "idle" && (
+        {status === "idle" && (
           <svg
             className="mr-1.5 h-4 w-4"
             fill="none"
@@ -219,7 +207,7 @@ export default function ApplyButton({
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+              d="M17 8l4 4m0 0l-4 4m4-4H3"
             />
           </svg>
         )}
@@ -227,7 +215,7 @@ export default function ApplyButton({
       </button>
 
       {status === "error" && errorMessage && (
-        <p className="text-sm text-[var(--error-text)]" role="alert">
+        <p className="text-sm text-red-600" role="alert">
           {errorMessage}
         </p>
       )}

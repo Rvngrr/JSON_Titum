@@ -19,6 +19,7 @@ import type {
   ExternalUrls,
   SkillProfile as SkillProfileType,
 } from "@/types";
+import ShareProfileModal from "@/components/applicant/ShareProfileModal";
 
 interface SkillWithTimestamps {
   id: string;
@@ -40,14 +41,13 @@ export default function ApplicantProfilePage() {
   const [careerGoal, setCareerGoal] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
   const [userEmail, setUserEmail] = useState<string>("");
-  const [resetting, setResetting] = useState(false);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   // Profile picture & banner state
   const [profilePicUrl, setProfilePicUrl] = useState<string | null>(null);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [uploadingPic, setUploadingPic] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const picInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
@@ -183,90 +183,6 @@ export default function ApplicantProfilePage() {
     setProfileData((prev) => (prev ? { ...prev, external_urls: urls } : prev));
   }, [profileData]);
 
-  const handleResetProfile = useCallback(async () => {
-    try {
-      setResetting(true);
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !profileData) return;
-
-      // Delete all skills associated with this profile
-      const { error: skillsError } = await supabase
-        .from("skills")
-        .delete()
-        .eq("skill_profile_id", profileData.id);
-      if (skillsError) {
-        console.error("Failed to delete skills:", skillsError.message);
-      }
-
-      // Delete resume file from storage if it exists
-      if (profileData.resume_file_path) {
-        try {
-          const { data: existingFiles } = await supabase.storage
-            .from("resumes")
-            .list(user.id);
-          if (existingFiles && existingFiles.length > 0) {
-            const filesToDelete = existingFiles.map((f) => `${user.id}/${f.name}`);
-            await supabase.storage.from("resumes").remove(filesToDelete);
-          }
-        } catch (storageErr) {
-          console.error("Failed to delete resume files:", storageErr);
-        }
-      }
-
-      // Reset profile data in skill_profiles table
-      const { error } = await supabase
-        .from("skill_profiles")
-        .update({
-          work_experience: [],
-          education: [],
-          certifications: [],
-          external_urls: { linkedin: "", github: "", portfolio: "" },
-          resume_file_path: null,
-          raw_resume_text: null,
-          total_years_experience: 0,
-          work_preferences: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", profileData.id);
-
-      if (error) {
-        console.error("Failed to update skill_profiles:", error.message, error.code, error.details);
-        throw new Error(error.message);
-      }
-
-      // Reset local state
-      setProfileData((prev) =>
-        prev
-          ? {
-              ...prev,
-              work_experience: [],
-              education: [],
-              certifications: [],
-              external_urls: { linkedin: "", github: "", portfolio: "" },
-              resume_file_path: null,
-              raw_resume_text: null,
-              total_years_experience: 0,
-              work_preferences: null,
-            }
-          : prev
-      );
-      setSkills([]);
-      setResumeFilename(null);
-      setCareerGoal(null);
-      setProfilePicUrl(null);
-      setBannerUrl(null);
-      setSkillsKey((k) => k + 1);
-      setShowResetConfirm(false);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : JSON.stringify(err);
-      console.error("Failed to reset profile:", message);
-      alert(`Failed to reset profile: ${message}`);
-    } finally {
-      setResetting(false);
-    }
-  }, [profileData]);
-
   if (loading) {
     return (
       <main className="flex-1 p-6 md:p-8">
@@ -359,8 +275,23 @@ export default function ApplicantProfilePage() {
       {/* Name & Info (below avatar) */}
       <div className="px-6 md:px-10 pt-16 pb-6">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">{userName || "Your Name"}</h1>
-          <p className="text-sm text-[var(--text-secondary)]">{userEmail}</p>
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-[var(--text-primary)]">{userName || "Your Name"}</h1>
+              <p className="text-sm text-[var(--text-secondary)]">{userEmail}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowShareModal(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] transition-all hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              aria-label="Share profile"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+              Share
+            </button>
+          </div>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             {careerGoal && (
               <span className="badge-pill bg-[var(--accent-light)] text-[var(--accent)] text-xs">
@@ -466,78 +397,15 @@ export default function ApplicantProfilePage() {
             <ExternalProfilesForm urls={(profileData?.external_urls as ExternalUrls) ?? { linkedin: "", github: "", portfolio: "" }} onSave={saveExternalUrls} />
           </div>
         </motion.section>
-
-        {/* Reset Profile */}
-        <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
-          <div className="glass-card p-6 border border-red-200 dark:border-red-900/30">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h2 className="text-sm font-semibold text-red-600 dark:text-red-400">Reset Profile</h2>
-                <p className="text-xs text-[var(--text-muted)] mt-1">
-                  This will permanently delete all your profile data including skills, work experience, education, certifications, external profiles, and your uploaded resume.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowResetConfirm(true)}
-                className="shrink-0 rounded-lg border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors"
-              >
-                Reset All Data
-              </button>
-            </div>
-          </div>
-        </motion.section>
       </div>
 
-      {/* Reset Confirmation Modal */}
-      {showResetConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="reset-dialog-title">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="mx-4 w-full max-w-md rounded-2xl bg-[var(--bg-card-solid)] p-6 shadow-xl border border-[var(--border-subtle)]"
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-950/50">
-                <svg className="h-5 w-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              <h3 id="reset-dialog-title" className="text-lg font-semibold text-[var(--text-primary)]">Reset Profile?</h3>
-            </div>
-            <p className="text-sm text-[var(--text-secondary)] mb-6">
-              Are you sure you want to reset your entire profile? This will delete:
-            </p>
-            <ul className="text-sm text-[var(--text-secondary)] mb-6 list-disc list-inside space-y-1">
-              <li>All skills (parsed and manual)</li>
-              <li>Work experience entries</li>
-              <li>Education entries</li>
-              <li>Certifications</li>
-              <li>External profile links</li>
-              <li>Uploaded resume</li>
-              <li>Profile picture and banner</li>
-            </ul>
-            <p className="text-xs text-[var(--text-muted)] mb-6">
-              This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowResetConfirm(false)}
-                disabled={resetting}
-                className="rounded-lg px-4 py-2 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleResetProfile}
-                disabled={resetting}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
-              >
-                {resetting ? "Resetting..." : "Yes, Reset Everything"}
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
+      {/* Share Profile Modal */}
+      <ShareProfileModal
+        open={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        userName={userName}
+        careerGoal={careerGoal}
+      />
     </main>
   );
 }
