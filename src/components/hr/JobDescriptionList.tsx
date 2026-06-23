@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { JobDescription } from "@/types";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
+import Pagination, { usePagination } from "@/components/shared/Pagination";
 
 interface ExtendedJobDescription extends JobDescription {
   external_job_id?: string | null;
@@ -192,6 +193,14 @@ export default function JobDescriptionList() {
     return jobs.filter((j) => j.status === statusFilter);
   }, [jobs, statusFilter]);
 
+  const {
+    currentPage,
+    setCurrentPage,
+    paginatedItems: paginatedJobs,
+    totalItems: totalFilteredJobs,
+    pageSize,
+  } = usePagination(filteredJobs, 5);
+
   const statusCounts = useMemo(() => ({
     all: jobs.length,
     published: jobs.filter((j) => j.status === "published").length,
@@ -267,7 +276,7 @@ export default function JobDescriptionList() {
 
       {/* Job rows */}
       <div className="space-y-2">
-        {filteredJobs.map((job) => (
+        {paginatedJobs.map((job) => (
           <div
             key={job.id}
             className="flex items-center gap-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-solid)] px-4 py-3.5 transition-all hover:border-cyan-500/30"
@@ -333,6 +342,15 @@ export default function JobDescriptionList() {
           </div>
         ))}
       </div>
+
+      {/* Pagination */}
+      <Pagination
+        currentPage={currentPage}
+        totalItems={totalFilteredJobs}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+        className="mt-5"
+      />
     </section>
   );
 }

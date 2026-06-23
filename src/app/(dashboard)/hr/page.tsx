@@ -46,12 +46,12 @@ export default function AdminDashboardPage() {
           totalApplications: appsRes.count ?? 0,
         });
 
-        // Recent applications (last 5)
+        // Recent applications (last 3)
         const { data: recentApplications } = await supabase
           .from("applications")
           .select("id, applicant_id, job_description_id, created_at")
           .order("created_at", { ascending: false })
-          .limit(5);
+          .limit(3);
 
         if (recentApplications && recentApplications.length > 0) {
           const applicantIds = [...new Set(recentApplications.map((a) => a.applicant_id))];
