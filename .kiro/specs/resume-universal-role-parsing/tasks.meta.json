@@ -1,0 +1,285 @@
+{
+  "pbtResults": {
+    "1. Write bug condition exploration test": {
+      "status": "passed",
+      "failingExample": "Bug condition confirmed - all 10 tests FAILED as expected on unfixed code:\n\nCase 1 - extractSkillsLocally() returns 0 skills for non-tech resumes:\n- extractSkillsLocally(\"experienced chef with culinary arts and food safety certification\") returns [] (0 skills)\n- extractSkillsLocally(\"registered nurse with patient care, CPR, medication administration\") returns [] (0 skills)\n- extractSkillsLocally(\"teacher with curriculum development, classroom management, lesson planning\") returns [] (0 skills)\n- extractSkillsLocally(\"mechanic skilled in HVAC, plumbing, electrical wiring, blueprint reading\") returns [] (0 skills)\n- PBT Counterexample: [\"experienced chef with culinary arts and food safety certification\"] → Property failed (returned false, 0 skills found)\n\nCase 4 - ROLE_EXPECTED_SKILLS missing non-tech roles:\n- ROLE_EXPECTED_SKILLS[\"Chef\"] returns undefined\n- ROLE_EXPECTED_SKILLS[\"Nurse\"] returns undefined\n- ROLE_EXPECTED_SKILLS[\"Teacher\"] returns undefined\n- ROLE_EXPECTED_SKILLS[\"Mechanic\"] returns undefined\n- PBT Counterexample: [\"Chef\"] → Property failed (undefined, no skills mapping exists)\n\nRoot Cause Confirmed: skillDB in extractSkillsLocally() contains ONLY tech skills (programming languages, frameworks, databases, DevOps tools). ROLE_EXPECTED_SKILLS maps only 10 tech roles.",
+      "lastRunTimestamp": 1782233157779
+    },
+    "2. Write preservation property tests (BEFORE implementing fix)": {
+      "status": "passed",
+      "lastRunTimestamp": 1782233679252
+    },
+    "3.11 Verify bug condition exploration test now passes": {
+      "status": "passed",
+      "lastRunTimestamp": 1782236543056
+    },
+    "3.12 Verify preservation tests still pass": {
+      "status": "passed",
+      "lastRunTimestamp": 1782236649295
+    }
+  },
+  "executionHistory": {
+    "1. Write bug condition exploration test": [
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782232622644
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782232675745
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782233187467
+      }
+    ],
+    "2. Write preservation property tests (BEFORE implementing fix)": [
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782232624084
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782233203748
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782233705062
+      }
+    ],
+    "3.1 Expand `skillDB` in `extractSkillsLocally()` with Culinary/Hospitality skills": [
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782232625436
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782233718551
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782233857145
+      }
+    ],
+    "3.2 Expand `skillDB` in `extractSkillsLocally()` with Healthcare/Nursing skills": [
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782232625859
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782233865179
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782234120107
+      }
+    ],
+    "3.3 Expand `skillDB` in `extractSkillsLocally()` with Education/Teaching skills": [
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782232626825
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782234136452
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782234274915
+      }
+    ],
+    "3.4 Expand `skillDB` in `extractSkillsLocally()` with Skilled Trades skills": [
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782232627683
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782234281776
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782234418631
+      }
+    ],
+    "3.5 Expand `skillDB` in `extractSkillsLocally()` with Business/Finance skills": [
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782232628339
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782234425266
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782234552228
+      }
+    ],
+    "3.6 Expand `skillDB` in `extractSkillsLocally()` with Marketing/Sales skills": [
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782232629155
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782234560323
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782234681329
+      }
+    ],
+    "3.7 Broaden AI prompt categories in `extractSkillsWithAI()`": [
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782232630186
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782234689749
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782234945551
+      }
+    ],
+    "3.8 Add conditional auto-populate logic for profile data in POST handler": [
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782232630921
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782234951822
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782235658150
+      }
+    ],
+    "3.9 Expand `POPULAR_ROLES` and `ROLE_EXPECTED_SKILLS` in career-goals page": [
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782232631731
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782235665239
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782236055303
+      }
+    ],
+    "3.10 Sync duplicate `ROLE_EXPECTED_SKILLS` in applicant dashboard page": [
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782232633074
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782236063029
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782236465783
+      }
+    ],
+    "3.11 Verify bug condition exploration test now passes": [
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782232633465
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782236477913
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782236558024
+      }
+    ],
+    "3.12 Verify preservation tests still pass": [
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782232634317
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782236568684
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782236667321
+      }
+    ],
+    "4. Checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782232635098
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782236682174
+      },
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782238074316
+      }
+    ],
+    "3. Fix for non-tech resume skill extraction and career goal support": [
+      {
+        "executionId": "8081d107-dd00-41cb-ae67-f85f38a62915",
+        "chatSessionId": "sess_2d01990c-2b60-40f7-899e-0640902a6a9b",
+        "timestamp": 1782236669910
+      }
+    ]
+  }
+}

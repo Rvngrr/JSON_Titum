@@ -7,6 +7,7 @@ import MatchPercentageBadge from "@/components/applicant/MatchPercentageBadge";
 import ApplicationStatusBadge from "@/components/applicant/ApplicationStatusBadge";
 import ApplyButton from "@/components/applicant/ApplyButton";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
+import Pagination, { usePagination } from "@/components/shared/Pagination";
 import type { JobDescription, MatchResult, JobRequiredSkill } from "@/types";
 
 interface JobWithMatch extends JobDescription {
@@ -191,6 +192,14 @@ export default function JobListings() {
     minMatch > 0 ||
     maxMatch < 100;
 
+  const {
+    currentPage,
+    setCurrentPage,
+    paginatedItems: paginatedJobs,
+    totalItems,
+    pageSize,
+  } = usePagination(filteredJobs, 10);
+
   if (loading) {
     return (
       <section aria-label="Job listings">
@@ -336,7 +345,7 @@ export default function JobListings() {
           )}
 
           <ul className="space-y-3" role="list">
-            {filteredJobs.map((job) => (
+            {paginatedJobs.map((job) => (
               <li
                 key={job.id}
                 className="glass-card p-4 transition hover:shadow-lg"
@@ -404,6 +413,15 @@ export default function JobListings() {
               </li>
             ))}
           </ul>
+
+          {/* Pagination */}
+          <Pagination
+            currentPage={currentPage}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            className="mt-6"
+          />
         </div>
       )}
     </section>

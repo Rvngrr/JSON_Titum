@@ -125,6 +125,85 @@ export async function POST(request: Request) {
       );
     }
 
+    // 4b. Conditionally auto-populate profile data from extractResumeProfile()
+    // Only fills fields that are currently empty/null/[] — never overwrites manual entries
+    if (resumeProfile) {
+      try {
+        // Fetch the user's existing profile record to check current data
+        const { data: existingProfile } = await supabase
+          .from("skill_profiles")
+          .select("work_experience, education, certifications")
+          .eq("user_id", user_id)
+          .single();
+
+        // Helper: check if a field is empty (null, undefined, or empty array)
+        const isEmpty = (field: unknown): boolean => {
+          if (field === null || field === undefined) return true;
+          if (Array.isArray(field) && field.length === 0) return true;
+          return false;
+        };
+
+        // Build an update object only for fields that are currently empty
+        const profileUpdate: Record<string, unknown> = {};
+
+        // Auto-populate work_experience if empty and resume has experience data
+        if (isEmpty(existingProfile?.work_experience) && resumeProfile.experience.length > 0) {
+          profileUpdate.work_experience = resumeProfile.experience.map((exp, idx) => ({
+            id: `resume-exp-${idx}-${Date.now()}`,
+            title: exp.title,
+            company: exp.organization,
+            startDate: exp.duration.split(/\s*[-–—]\s*/)[0]?.trim() || "",
+            endDate: exp.duration.split(/\s*[-–—]\s*/)[1]?.trim() || "",
+            isCurrent: /present|current/i.test(exp.duration),
+            description: exp.highlights.join(". "),
+          }));
+        }
+
+        // Auto-populate education if empty and resume has education data
+        if (isEmpty(existingProfile?.education) && resumeProfile.education.length > 0) {
+          profileUpdate.education = resumeProfile.education.map((edu, idx) => ({
+            id: `resume-edu-${idx}-${Date.now()}`,
+            degree: edu.degree,
+            institution: edu.institution,
+            fieldOfStudy: "",
+            graduationYear: edu.year,
+          }));
+        }
+
+        // Auto-populate certifications if empty and resume has certifications data
+        if (isEmpty(existingProfile?.certifications) && resumeProfile.certifications.length > 0) {
+          profileUpdate.certifications = resumeProfile.certifications.map((cert, idx) => ({
+            id: `resume-cert-${idx}-${Date.now()}`,
+            name: cert,
+            issuer: "",
+            date: "",
+          }));
+        }
+
+        // Only update if there are fields to populate
+        if (Object.keys(profileUpdate).length > 0) {
+          console.log("[resume/parse] Step 4b: Auto-populating empty profile fields:", Object.keys(profileUpdate));
+          const { error: profileUpdateError } = await supabase
+            .from("skill_profiles")
+            .update({
+              ...profileUpdate,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("user_id", user_id);
+
+          if (profileUpdateError) {
+            // Non-fatal: log but continue — skills are still saved
+            console.error("[resume/parse] Step 4b: Profile auto-populate failed:", profileUpdateError);
+          }
+        } else {
+          console.log("[resume/parse] Step 4b: All profile fields already have data, skipping auto-populate");
+        }
+      } catch (autoPopulateError) {
+        // Non-fatal: auto-population is a convenience, not critical
+        console.error("[resume/parse] Step 4b: Auto-populate error:", autoPopulateError);
+      }
+    }
+
     // 5. Remove previous resume-parsed skills before inserting new ones
     await supabase
       .from("skills")
@@ -343,6 +422,16 @@ SKILL CATEGORIES TO LOOK FOR:
 - Testing (Manual Testing, Unit Testing, Cross-Browser Testing, etc.)
 - Soft skills (Leadership, Communication, Problem-Solving, Team Collaboration, etc.)
 - Other tools (Excel, Google Suite, Microsoft Office, etc.)
+- Culinary Arts (Food Safety, Menu Planning, Kitchen Management, HACCP, ServSafe, Pastry Arts, etc.)
+- Healthcare/Nursing (Patient Care, CPR, Medication Administration, HIPAA, EHR, Phlebotomy, etc.)
+- Education/Teaching (Curriculum Development, Classroom Management, Lesson Planning, Special Education, etc.)
+- Skilled Trades (HVAC, Plumbing, Electrical Wiring, Blueprint Reading, Welding, Carpentry, etc.)
+- Hospitality/Tourism (Event Planning, Front of House, Hospitality Management, POS Systems, Catering, etc.)
+- Business/Finance/Accounting (Accounting, Bookkeeping, Financial Analysis, QuickBooks, Budgeting, Payroll, etc.)
+- Marketing/Sales (Digital Marketing, SEO, SEM, Content Strategy, CRM, Brand Management, Lead Generation, etc.)
+- Legal (Contract Law, Legal Research, Compliance, Paralegal, Litigation, Case Management, etc.)
+- Agriculture (Crop Management, Irrigation, Pest Control, Farm Equipment, Soil Science, Agronomy, etc.)
+- Transportation/Logistics (Fleet Management, Supply Chain, Warehousing, CDL, Route Planning, Freight, etc.)
 
 Return a JSON array. Example:
 [
@@ -753,7 +842,7 @@ function extractProfileLocally(rawText: string): ResumeProfile {
  * 4. Skills where the person led/taught others → advanced/expert
  * 5. Skills only in certifications/seminars → beginner
  */
-function extractSkillsLocally(
+export function extractSkillsLocally(
   resumeText: string
 ): Array<{ name: string; proficiency_level: "beginner" | "intermediate" | "advanced" | "expert" }> {
   const text = resumeText.toLowerCase();
@@ -865,6 +954,90 @@ function extractSkillsLocally(
     { name: "Google Suite", patterns: [/\bgsuite\b/, /\bgoogle\s*(suite|workspace)\b/] },
     { name: "Microsoft Teams", patterns: [/\bteams\b/] },
     { name: "Outlook", patterns: [/\boutlook\b/] },
+
+    // Culinary/Hospitality
+    { name: "Food Safety", patterns: [/\bfood\s*safety\b/i] },
+    { name: "Menu Planning", patterns: [/\bmenu\s*planning\b/i, /\bmenu\s*design\b/i, /\bmenu\s*development\b/i] },
+    { name: "Kitchen Management", patterns: [/\bkitchen\s*management\b/i, /\bkitchen\s*operations?\b/i] },
+    { name: "HACCP", patterns: [/\bhaccp\b/i] },
+    { name: "ServSafe", patterns: [/\bservsafe\b/i, /\bserv\s*safe\b/i] },
+    { name: "Pastry Arts", patterns: [/\bpastry\s*arts?\b/i, /\bpastry\s*chef\b/i, /\bbaking\b/i] },
+    { name: "Catering", patterns: [/\bcatering\b/i] },
+    { name: "Hospitality Management", patterns: [/\bhospitality\s*management\b/i, /\bhospitality\b/i] },
+    { name: "Event Planning", patterns: [/\bevent\s*planning\b/i, /\bevent\s*management\b/i, /\bevent\s*coordination\b/i] },
+    { name: "Front of House", patterns: [/\bfront\s*of\s*house\b/i, /\bfoh\b/i] },
+    { name: "POS Systems", patterns: [/\bpos\s*system/i, /\bpoint\s*of\s*sale\b/i] },
+    { name: "Culinary Arts", patterns: [/\bculinary\s*arts?\b/i, /\bculinary\b/i] },
+    { name: "Food Preparation", patterns: [/\bfood\s*prep/i, /\bfood\s*preparation\b/i] },
+    { name: "Inventory Management", patterns: [/\binventory\s*management\b/i, /\binventory\s*control\b/i, /\bstock\s*management\b/i] },
+
+    // Healthcare/Nursing
+    { name: "Patient Care", patterns: [/\bpatient\s*care\b/i] },
+    { name: "Medication Administration", patterns: [/\bmedication\s*administration\b/i, /\bmed\s*admin/i] },
+    { name: "Vital Signs", patterns: [/\bvital\s*signs?\b/i, /\bvitals\b/i] },
+    { name: "CPR", patterns: [/\bcpr\b/i, /\bcardiopulmonary\s*resuscitation\b/i] },
+    { name: "HIPAA Compliance", patterns: [/\bhipaa\b/i, /\bhipaa\s*compliance\b/i] },
+    { name: "Electronic Health Records (EHR)", patterns: [/\behr\b/i, /\belectronic\s*health\s*records?\b/i, /\belectronic\s*medical\s*records?\b/i, /\bemr\b/i] },
+    { name: "Phlebotomy", patterns: [/\bphlebotomy\b/i, /\bblood\s*draw/i, /\bvenipuncture\b/i] },
+    { name: "Wound Care", patterns: [/\bwound\s*care\b/i, /\bwound\s*management\b/i] },
+    { name: "Triage", patterns: [/\btriage\b/i] },
+    { name: "Nursing Assessment", patterns: [/\bnursing\s*assessment\b/i, /\bpatient\s*assessment\b/i] },
+    { name: "First Aid", patterns: [/\bfirst\s*aid\b/i] },
+    { name: "Medical Terminology", patterns: [/\bmedical\s*terminology\b/i] },
+
+    // Education/Teaching
+    { name: "Curriculum Development", patterns: [/\bcurriculum\s*development\b/i, /\bcurriculum\s*design\b/i] },
+    { name: "Classroom Management", patterns: [/\bclassroom\s*management\b/i] },
+    { name: "Lesson Planning", patterns: [/\blesson\s*planning\b/i, /\blesson\s*plans?\b/i] },
+    { name: "Special Education", patterns: [/\bspecial\s*education\b/i, /\bsped\b/i, /\bspecial\s*needs\b/i] },
+    { name: "Differentiated Instruction", patterns: [/\bdifferentiated\s*instruction\b/i, /\bdifferentiated\s*learning\b/i] },
+    { name: "Student Assessment", patterns: [/\bstudent\s*assessment\b/i, /\bformative\s*assessment\b/i, /\bsummative\s*assessment\b/i] },
+    { name: "IEP Development", patterns: [/\biep\b/i, /\bindividualized\s*education\s*program\b/i, /\bindividualized\s*education\s*plan\b/i] },
+    { name: "Educational Technology", patterns: [/\beducational\s*technology\b/i, /\bedtech\b/i, /\bed\s*tech\b/i] },
+    { name: "Tutoring", patterns: [/\btutoring\b/i, /\btutor\b/i] },
+    { name: "Academic Advising", patterns: [/\bacademic\s*advising\b/i, /\bacademic\s*advisor\b/i, /\bacademic\s*counseling\b/i] },
+
+    // Skilled Trades
+    { name: "HVAC", patterns: [/\bhvac\b/i, /\bheating\s*(,?\s*ventilation)?\s*(,?\s*and)?\s*air\s*conditioning\b/i] },
+    { name: "Plumbing", patterns: [/\bplumbing\b/i, /\bplumber\b/i] },
+    { name: "Electrical Wiring", patterns: [/\belectrical\s*wiring\b/i, /\belectrical\s*installation\b/i, /\bwiring\b/i] },
+    { name: "Blueprint Reading", patterns: [/\bblueprint\s*reading\b/i, /\bblueprints?\b/i, /\bschematic\s*reading\b/i] },
+    { name: "Welding", patterns: [/\bwelding\b/i, /\bwelder\b/i, /\bmig\s*welding\b/i, /\btig\s*welding\b/i] },
+    { name: "Automotive Repair", patterns: [/\bautomotive\s*repair\b/i, /\bauto\s*repair\b/i, /\bautomotive\s*maintenance\b/i, /\bvehicle\s*repair\b/i] },
+    { name: "Carpentry", patterns: [/\bcarpentry\b/i, /\bcarpenter\b/i, /\bwoodworking\b/i] },
+    { name: "Masonry", patterns: [/\bmasonry\b/i, /\bmason\b/i, /\bbricklaying\b/i, /\bbricklayer\b/i] },
+    { name: "Safety Compliance", patterns: [/\bsafety\s*compliance\b/i, /\bsafety\s*regulations?\b/i, /\bworkplace\s*safety\b/i] },
+    { name: "OSHA", patterns: [/\bosha\b/i] },
+    { name: "Forklift Operation", patterns: [/\bforklift\s*operat/i, /\bforklift\s*certif/i, /\bforklift\b/i] },
+    { name: "CNC Machining", patterns: [/\bcnc\s*machin/i, /\bcnc\b/i, /\bcomputer\s*numerical\s*control\b/i] },
+
+    // Business/Finance
+    { name: "Accounting", patterns: [/\baccounting\b/i, /\baccountant\b/i] },
+    { name: "Bookkeeping", patterns: [/\bbookkeeping\b/i, /\bbookkeeper\b/i] },
+    { name: "Financial Analysis", patterns: [/\bfinancial\s*analysis\b/i, /\bfinancial\s*analyst\b/i] },
+    { name: "Budgeting", patterns: [/\bbudgeting\b/i, /\bbudget\s*management\b/i] },
+    { name: "QuickBooks", patterns: [/\bquickbooks\b/i, /\bquick\s*books\b/i] },
+    { name: "Payroll", patterns: [/\bpayroll\b/i, /\bpayroll\s*processing\b/i] },
+    { name: "Tax Preparation", patterns: [/\btax\s*preparation\b/i, /\btax\s*prep\b/i, /\btax\s*filing\b/i] },
+    { name: "Auditing", patterns: [/\bauditing\b/i, /\bauditor\b/i, /\baudit\b/i] },
+    { name: "Compliance", patterns: [/\bcompliance\b/i, /\bregulatory\s*compliance\b/i] },
+    { name: "Financial Reporting", patterns: [/\bfinancial\s*reporting\b/i, /\bfinancial\s*statements?\b/i] },
+    { name: "Accounts Payable", patterns: [/\baccounts\s*payable\b/i, /\ba\/p\b/i, /\bap\b/i] },
+    { name: "Accounts Receivable", patterns: [/\baccounts\s*receivable\b/i, /\ba\/r\b/i, /\bar\b/i] },
+
+    // Marketing/Sales
+    { name: "Digital Marketing", patterns: [/\bdigital\s*marketing\b/i] },
+    { name: "SEO", patterns: [/\bseo\b/i, /\bsearch\s*engine\s*optimization\b/i] },
+    { name: "SEM", patterns: [/\bsem\b/i, /\bsearch\s*engine\s*marketing\b/i] },
+    { name: "Social Media Marketing", patterns: [/\bsocial\s*media\s*marketing\b/i, /\bsmm\b/i, /\bsocial\s*media\s*strategy\b/i] },
+    { name: "Content Strategy", patterns: [/\bcontent\s*strategy\b/i, /\bcontent\s*marketing\b/i] },
+    { name: "Copywriting", patterns: [/\bcopywriting\b/i, /\bcopywriter\b/i] },
+    { name: "CRM (Salesforce)", patterns: [/\bsalesforce\b/i] },
+    { name: "CRM (HubSpot)", patterns: [/\bhubspot\b/i, /\bhub\s*spot\b/i] },
+    { name: "Market Research", patterns: [/\bmarket\s*research\b/i, /\bmarket\s*analysis\b/i] },
+    { name: "Brand Management", patterns: [/\bbrand\s*management\b/i, /\bbranding\b/i] },
+    { name: "Lead Generation", patterns: [/\blead\s*generation\b/i, /\blead\s*gen\b/i] },
+    { name: "Email Marketing", patterns: [/\bemail\s*marketing\b/i, /\bemail\s*campaigns?\b/i] },
   ];
 
   const found: Array<{ name: string; proficiency_level: "beginner" | "intermediate" | "advanced" | "expert" }> = [];

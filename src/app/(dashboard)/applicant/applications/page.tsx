@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import Pagination, { usePagination } from "@/components/shared/Pagination";
 
 interface AppliedJob {
   id: string;
@@ -18,6 +19,14 @@ export default function AppliedJobsPage() {
   const [appliedJobs, setAppliedJobs] = useState<AppliedJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const {
+    currentPage,
+    setCurrentPage,
+    paginatedItems: paginatedJobs,
+    totalItems,
+    pageSize,
+  } = usePagination(appliedJobs, 10);
 
   useEffect(() => {
     async function fetchAppliedJobs() {
@@ -150,7 +159,7 @@ export default function AppliedJobsPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {appliedJobs.map((job, index) => {
+            {paginatedJobs.map((job, index) => {
               const pct = job.matchPercentage;
               const badgeColor = pct !== null && pct >= 80
                 ? "text-green-400 border-green-500/40"
@@ -166,7 +175,7 @@ export default function AppliedJobsPage() {
                 >
                   {/* Number */}
                   <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[var(--bg-secondary)] text-sm font-semibold text-[var(--text-muted)] border border-[var(--border-subtle)]">
-                    {index + 1}
+                    {(currentPage - 1) * pageSize + index + 1}
                   </span>
 
                   {/* Job info */}
@@ -199,6 +208,17 @@ export default function AppliedJobsPage() {
               );
             })}
           </div>
+        )}
+
+        {/* Pagination */}
+        {appliedJobs.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            className="mt-6"
+          />
         )}
       </motion.div>
     </main>

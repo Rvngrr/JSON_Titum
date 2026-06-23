@@ -10,13 +10,15 @@ const POPULAR_ROLES = [
   "Data Analyst", "Software Developer", "Information Technology",
   "Advertising", "Software Media", "Customer Svc",
   "Cybersecurity", "Web Developer", "AI/ML Engineer", "UX Designer",
+  "Chef", "Nurse", "Teacher", "Mechanic",
+  "Electrician", "Accountant", "Marketing Manager", "Graphic Designer",
 ];
 
 /**
  * Typical skills expected for each aspired role.
  * Used to calculate role readiness against applicant's current skills.
  */
-const ROLE_EXPECTED_SKILLS: Record<string, string[]> = {
+export const ROLE_EXPECTED_SKILLS: Record<string, string[]> = {
   "Data Analyst": ["SQL", "Python", "Excel", "Data Analysis", "Statistics", "Tableau", "Power BI", "R"],
   "Software Developer": ["JavaScript", "Python", "Git", "REST APIs", "SQL", "React", "Node.js", "TypeScript"],
   "Information Technology": ["Linux", "Networking", "Troubleshooting", "Windows", "Cloud Services", "Security", "Python"],
@@ -27,6 +29,14 @@ const ROLE_EXPECTED_SKILLS: Record<string, string[]> = {
   "Web Developer": ["HTML", "CSS", "JavaScript", "React", "Node.js", "Git", "Responsive Design", "TypeScript"],
   "AI/ML Engineer": ["Python", "Machine Learning", "TensorFlow", "Deep Learning", "Statistics", "NLP", "PyTorch", "Data Analysis"],
   "UX Designer": ["Figma", "User Research", "Wireframing", "Prototyping", "UI/UX Design", "Adobe XD", "Communication"],
+  "Chef": ["Culinary Arts", "Food Safety", "Menu Planning", "Kitchen Management", "HACCP", "Inventory Management", "Team Leadership", "Time Management"],
+  "Nurse": ["Patient Care", "Medication Administration", "Vital Signs", "CPR", "HIPAA Compliance", "EHR", "Communication", "Critical Thinking"],
+  "Teacher": ["Curriculum Development", "Classroom Management", "Lesson Planning", "Student Assessment", "Communication", "Educational Technology", "Differentiated Instruction", "Patience"],
+  "Mechanic": ["Automotive Repair", "Diagnostics", "Blueprint Reading", "Electrical Systems", "OSHA", "Welding", "Problem-Solving", "Preventive Maintenance"],
+  "Electrician": ["Electrical Wiring", "Blueprint Reading", "NEC Code", "Safety Compliance", "Troubleshooting", "PLC Programming", "Conduit Bending", "Circuit Design"],
+  "Accountant": ["Accounting", "Financial Analysis", "QuickBooks", "Tax Preparation", "Auditing", "Excel", "Budgeting", "Compliance"],
+  "Marketing Manager": ["Digital Marketing", "SEO", "Content Strategy", "Social Media Marketing", "Analytics", "Brand Management", "CRM", "Market Research"],
+  "Graphic Designer": ["Adobe Photoshop", "Adobe Illustrator", "Figma", "Typography", "Brand Identity", "Layout Design", "Color Theory", "Communication"],
 };
 
 const JOB_TYPES = ["Full time", "Part time", "Contract/Temp"];
@@ -150,10 +160,29 @@ export default function CareerGoalsPage() {
   const handleBack = () => { if (currentStep > 1) setCurrentStep((p) => p - 1); };
 
   const handleComplete = useCallback(async () => {
+    // Re-check the database for resume_file_path in case state is stale
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setError("You must be logged in."); return; }
+
+    let currentResumeFilename = resumeFilename;
+    if (!currentResumeFilename) {
+      const { data: profileCheck } = await supabase
+        .from("skill_profiles")
+        .select("resume_file_path")
+        .eq("user_id", user.id)
+        .single();
+      if (profileCheck?.resume_file_path) {
+        const parts = (profileCheck.resume_file_path as string).split("/");
+        currentResumeFilename = parts[parts.length - 1];
+        setResumeFilename(currentResumeFilename);
+      }
+    }
+
     // Validate required steps are completed
     const reasons: string[] = [];
     if (!careerGoal.trim()) reasons.push("Select an aspired role / job");
-    if (!resumeFilename) reasons.push("Upload your resume");
+    if (!currentResumeFilename) reasons.push("Upload your resume");
 
     if (reasons.length > 0) {
       setIncompleteReasons(reasons);

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import Pagination, { usePagination } from "@/components/shared/Pagination";
 
 interface ApplicantEntry {
   id: string;
@@ -111,6 +112,14 @@ export default function HRApplicantsPage() {
     ? applicants
     : applicants.filter((a) => a.jobId === filterJob);
 
+  const {
+    currentPage,
+    setCurrentPage,
+    paginatedItems: paginatedApplicants,
+    totalItems,
+    pageSize,
+  } = usePagination(filteredApplicants, 10);
+
   if (loading) {
     return (
       <main className="flex-1 p-6 md:p-8">
@@ -185,7 +194,7 @@ export default function HRApplicantsPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {filteredApplicants.map((applicant) => {
+            {paginatedApplicants.map((applicant) => {
               const pct = applicant.matchPercentage;
               const badgeColor = pct !== null && pct >= 80
                 ? "text-green-400 border-green-500/40"
@@ -226,6 +235,17 @@ export default function HRApplicantsPage() {
               );
             })}
           </div>
+        )}
+
+        {/* Pagination */}
+        {filteredApplicants.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            className="mt-6"
+          />
         )}
       </motion.div>
     </main>

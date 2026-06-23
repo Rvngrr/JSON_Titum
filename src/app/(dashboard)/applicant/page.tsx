@@ -64,6 +64,14 @@ const ROLE_EXPECTED_SKILLS: Record<string, string[]> = {
   "Web Developer": ["HTML", "CSS", "JavaScript", "React", "Node.js", "Git", "Responsive Design", "TypeScript"],
   "AI/ML Engineer": ["Python", "Machine Learning", "TensorFlow", "Deep Learning", "Statistics", "NLP", "PyTorch", "Data Analysis"],
   "UX Designer": ["Figma", "User Research", "Wireframing", "Prototyping", "UI/UX Design", "Adobe XD", "Communication"],
+  "Chef": ["Culinary Arts", "Food Safety", "Menu Planning", "Kitchen Management", "HACCP", "Inventory Management", "Team Leadership", "Time Management"],
+  "Nurse": ["Patient Care", "Medication Administration", "Vital Signs", "CPR", "HIPAA Compliance", "EHR", "Communication", "Critical Thinking"],
+  "Teacher": ["Curriculum Development", "Classroom Management", "Lesson Planning", "Student Assessment", "Communication", "Educational Technology", "Differentiated Instruction", "Patience"],
+  "Mechanic": ["Automotive Repair", "Diagnostics", "Blueprint Reading", "Electrical Systems", "OSHA", "Welding", "Problem-Solving", "Preventive Maintenance"],
+  "Electrician": ["Electrical Wiring", "Blueprint Reading", "NEC Code", "Safety Compliance", "Troubleshooting", "PLC Programming", "Conduit Bending", "Circuit Design"],
+  "Accountant": ["Accounting", "Financial Analysis", "QuickBooks", "Tax Preparation", "Auditing", "Excel", "Budgeting", "Compliance"],
+  "Marketing Manager": ["Digital Marketing", "SEO", "Content Strategy", "Social Media Marketing", "Analytics", "Brand Management", "CRM", "Market Research"],
+  "Graphic Designer": ["Adobe Photoshop", "Adobe Illustrator", "Figma", "Typography", "Brand Identity", "Layout Design", "Color Theory", "Communication"],
 };
 
 function computeRoleReadiness(careerGoal: string, userSkills: string[]): RoleReadinessData | null {

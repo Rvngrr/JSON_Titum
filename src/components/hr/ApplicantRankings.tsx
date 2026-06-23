@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
+import Pagination, { usePagination } from "@/components/shared/Pagination";
 
 /**
  * Represents a ranked applicant entry for display in the rankings table.
@@ -93,6 +94,22 @@ export default function ApplicantRankings({ jobId }: ApplicantRankingsProps) {
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [fallbackMode, setFallbackMode] = useState(false);
+
+  // Combine ranked + pending for pagination
+  const allApplicants = [
+    ...rankedApplicants.map((a) => ({ ...a, type: "ranked" as const })),
+    ...pendingApplicants.map((a) => ({ ...a, type: "pending" as const })),
+  ];
+  const {
+    currentPage,
+    setCurrentPage,
+    paginatedItems: paginatedAllApplicants,
+    totalItems: totalRankingItems,
+    pageSize: rankingPageSize,
+  } = usePagination(allApplicants, 10);
+
+  const paginatedRanked = paginatedAllApplicants.filter((a) => a.type === "ranked") as (RankedApplicant & { type: "ranked" })[];
+  const paginatedPending = paginatedAllApplicants.filter((a) => a.type === "pending") as (PendingApplicant & { type: "pending" })[];
 
   useEffect(() => {
     async function fetchRankings() {
@@ -335,7 +352,7 @@ export default function ApplicantRankings({ jobId }: ApplicantRankingsProps) {
           </tr>
         </thead>
         <tbody>
-          {rankedApplicants.map((applicant) => (
+          {paginatedRanked.map((applicant) => (
             <tr
               key={applicant.applicantId}
               className="border-b border-gray-100 hover:bg-gray-50"
@@ -352,7 +369,7 @@ export default function ApplicantRankings({ jobId }: ApplicantRankingsProps) {
               </td>
             </tr>
           ))}
-          {pendingApplicants.map((applicant) => (
+          {paginatedPending.map((applicant) => (
             <tr
               key={applicant.applicantId}
               className="border-b border-gray-100 hover:bg-gray-50"
@@ -373,6 +390,15 @@ export default function ApplicantRankings({ jobId }: ApplicantRankingsProps) {
           ))}
         </tbody>
       </table>
+
+      {/* Pagination */}
+      <Pagination
+        currentPage={currentPage}
+        totalItems={totalRankingItems}
+        pageSize={rankingPageSize}
+        onPageChange={setCurrentPage}
+        className="mt-4"
+      />
     </section>
   );
 }
