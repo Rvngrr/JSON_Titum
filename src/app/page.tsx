@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { motion, type Variants } from "framer-motion";
 import FloatingOrbs from "@/components/shared/FloatingOrbs";
@@ -31,11 +32,14 @@ export default function Home() {
       {/* Navigation */}
       <nav className="relative z-10 flex items-center justify-between px-6 py-5 md:px-16">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent-teal to-periwinkle">
-            <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
+          <Image
+            src="/careerflow.png"
+            alt="CareerFlow logo"
+            width={32}
+            height={32}
+            className="h-8 w-8 rounded-lg"
+            priority
+          />
           <span className="text-xl font-bold text-[var(--text-primary)]">CareerFlow</span>
         </div>
 
