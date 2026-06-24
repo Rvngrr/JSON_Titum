@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -87,11 +88,7 @@ export default function ApplicantLayout({
       <div>
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 mb-6">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-accent-teal to-periwinkle">
-            <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
+          <Image src="/careerflow.png" alt="CareerFlow logo" width={28} height={28} className="rounded-lg" />
           <span className="text-sm font-bold text-[var(--text-primary)]">CareerFlow</span>
         </Link>
 
@@ -145,11 +142,7 @@ export default function ApplicantLayout({
       {/* Mobile header */}
       <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-3 md:hidden sidebar-glass">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-accent-teal to-periwinkle">
-            <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
+          <Image src="/careerflow.png" alt="CareerFlow logo" width={28} height={28} className="rounded-lg" />
           <span className="text-sm font-bold text-[var(--text-primary)]">CareerFlow</span>
         </Link>
         <button
