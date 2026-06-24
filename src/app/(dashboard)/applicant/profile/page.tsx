@@ -48,6 +48,8 @@ export default function ApplicantProfilePage() {
   const [uploadingPic, setUploadingPic] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const picInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
@@ -196,6 +198,65 @@ export default function ApplicantProfilePage() {
     setProfileData((prev) => (prev ? { ...prev, external_urls: urls } : prev));
   }, [profileData]);
 
+  const handleResetProfile = useCallback(async () => {
+    try {
+      setResetting(true);
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !profileData) return;
+
+      // Clear all profile fields (only columns that exist in the table)
+      const { error } = await supabase.from("skill_profiles").update({
+        work_experience: [],
+        education: [],
+        certifications: [],
+        external_urls: { linkedin: "", github: "", portfolio: "" },
+        work_preferences: null,
+        resume_file_path: null,
+        raw_resume_text: null,
+        total_years_experience: 0,
+        updated_at: new Date().toISOString(),
+      }).eq("id", profileData.id);
+
+      if (error) throw error;
+
+      // Try to clear profile_picture_url and banner_url (these may not exist in all environments)
+      await supabase.from("skill_profiles").update({
+        profile_picture_url: null,
+        banner_url: null,
+      }).eq("id", profileData.id).then(() => {/* ignore errors for optional columns */});
+
+      // Delete all skills associated with this profile
+      const { error: skillsError } = await supabase.from("skills").delete().eq("skill_profile_id", profileData.id);
+      if (skillsError) console.warn("Failed to delete skills:", skillsError.message);
+
+      // Reset local state
+      setProfileData((prev) => prev ? {
+        ...prev,
+        work_experience: [],
+        education: [],
+        certifications: [],
+        external_urls: { linkedin: "", github: "", portfolio: "" },
+        work_preferences: null,
+        resume_file_path: null,
+        raw_resume_text: null,
+        total_years_experience: 0,
+      } : prev);
+      setSkills([]);
+      setResumeFilename(null);
+      setCareerGoal(null);
+      setProfilePicUrl(null);
+      setBannerUrl(null);
+      setSkillsKey((k) => k + 1);
+      setShowResetConfirm(false);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : (typeof err === "object" && err !== null && "message" in err) ? (err as { message: string }).message : JSON.stringify(err);
+      console.error("Failed to reset profile:", message);
+    } finally {
+      setResetting(false);
+    }
+  }, [profileData]);
+
   if (loading) {
     return (
       <main className="flex-1 p-6 md:p-8">
@@ -293,17 +354,30 @@ export default function ApplicantProfilePage() {
               <h1 className="text-2xl font-bold text-[var(--text-primary)]">{userName || "Your Name"}</h1>
               <p className="text-sm text-[var(--text-secondary)]">{userEmail}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowShareModal(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] transition-all hover:border-[var(--accent)] hover:text-[var(--accent)]"
-              aria-label="Share profile"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-              </svg>
-              Share
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowResetConfirm(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition-all hover:border-red-400 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400 dark:hover:border-red-600 dark:hover:bg-red-950/50"
+                aria-label="Reset profile"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowShareModal(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] transition-all hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                aria-label="Share profile"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                Share
+              </button>
+            </div>
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             {careerGoal && (
@@ -419,6 +493,57 @@ export default function ApplicantProfilePage() {
         userName={userName}
         careerGoal={careerGoal}
       />
+
+      {/* Reset Confirmation Modal */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="reset-dialog-title">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mx-4 w-full max-w-md rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card-solid)] p-6 shadow-xl"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-950/40">
+                <svg className="h-5 w-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 id="reset-dialog-title" className="text-lg font-semibold text-[var(--text-primary)]">Reset Profile</h3>
+            </div>
+            <p className="text-sm text-[var(--text-secondary)] mb-6">
+              This will permanently clear all your profile details including skills, work experience, education, certifications, external links, resume, career goal, and profile images. This action cannot be undone.
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowResetConfirm(false)}
+                disabled={resetting}
+                className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] px-4 py-2 text-sm font-medium text-[var(--text-primary)] transition-all hover:bg-[var(--bg-tertiary)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleResetProfile}
+                disabled={resetting}
+                className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-red-700 disabled:opacity-50"
+              >
+                {resetting ? (
+                  <>
+                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    </svg>
+                    Resetting...
+                  </>
+                ) : (
+                  "Reset Everything"
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </main>
   );
 }
