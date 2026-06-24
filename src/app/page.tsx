@@ -402,7 +402,7 @@ export default function Home() {
               Hire Smarter, Faster
             </h2>
             <p className="mt-4 max-w-2xl text-lg text-[var(--text-secondary)]">
-              Our HR dashboard gives hiring teams AI-powered tools to find the best candidates from your applicant pool.
+              Our Admin dashboard gives hiring teams AI-powered tools to find the best candidates from your applicant pool.
             </p>
           </motion.div>
 

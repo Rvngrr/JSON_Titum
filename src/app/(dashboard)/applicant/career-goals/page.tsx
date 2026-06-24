@@ -86,18 +86,23 @@ export default function CareerGoalsPage() {
     const expectedSkills = ROLE_EXPECTED_SKILLS[careerGoal];
     if (!expectedSkills || userSkills.length === 0) return null;
 
-    const userSkillsLower = userSkills.map((s) => s.toLowerCase());
-    const matched = expectedSkills.filter((expected) =>
-      userSkillsLower.some((us) =>
-        us.includes(expected.toLowerCase()) || expected.toLowerCase().includes(us)
-      )
-    );
-    const missing = expectedSkills.filter(
-      (expected) =>
-        !userSkillsLower.some((us) =>
-          us.includes(expected.toLowerCase()) || expected.toLowerCase().includes(us)
-        )
-    );
+    const userSkillsLower = userSkills.map((s) => s.toLowerCase().trim());
+    const matched = expectedSkills.filter((expected) => {
+      const expectedLower = expected.toLowerCase();
+      return userSkillsLower.some((us) =>
+        us === expectedLower || 
+        (us.length > 2 && expectedLower.includes(us)) || 
+        (expectedLower.length > 2 && us.includes(expectedLower))
+      );
+    });
+    const missing = expectedSkills.filter((expected) => {
+      const expectedLower = expected.toLowerCase();
+      return !userSkillsLower.some((us) =>
+        us === expectedLower || 
+        (us.length > 2 && expectedLower.includes(us)) || 
+        (expectedLower.length > 2 && us.includes(expectedLower))
+      );
+    });
 
     const percentage = Math.round((matched.length / expectedSkills.length) * 100);
     return { percentage, matched, missing, total: expectedSkills.length };
