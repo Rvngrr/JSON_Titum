@@ -423,9 +423,36 @@ export default function ApplicantProfilePage() {
                 </p>
               </div>
             </div>
-            <Link href="/applicant/career-goals" className="btn-secondary text-xs whitespace-nowrap">
-              {resumeFilename || careerGoal ? "Update" : "Set Up"}
-            </Link>
+            <div className="flex items-center gap-2">
+              {resumeFilename && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const supabase = createClient();
+                      const { data: { user } } = await supabase.auth.getUser();
+                      if (!user) return;
+                      const response = await fetch(`/api/resume/view?applicant_id=${user.id}`);
+                      const data = await response.json();
+                      if (data.url) {
+                        window.open(data.url, "_blank", "noopener,noreferrer");
+                      } else {
+                        alert(data.error || "Unable to open resume.");
+                      }
+                    } catch {
+                      alert("Failed to open resume.");
+                    }
+                  }}
+                  className="btn-primary text-xs whitespace-nowrap"
+                  aria-label="View uploaded resume"
+                >
+                  View Resume
+                </button>
+              )}
+              <Link href="/applicant/career-goals" className="btn-secondary text-xs whitespace-nowrap">
+                {resumeFilename || careerGoal ? "Update" : "Set Up"}
+              </Link>
+            </div>
           </div>
         </motion.section>
 
