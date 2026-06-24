@@ -24,7 +24,7 @@ describe('Skills Taxonomy', () => {
           industries.add(industry);
         }
       }
-      expect(industries.size).toBe(8);
+      expect(industries.size).toBeGreaterThanOrEqual(8);
       expect(industries).toContain('software-engineering');
       expect(industries).toContain('data-science');
       expect(industries).toContain('devops');
@@ -33,6 +33,23 @@ describe('Skills Taxonomy', () => {
       expect(industries).toContain('cybersecurity');
       expect(industries).toContain('mobile-development');
       expect(industries).toContain('game-development');
+      // Multi-industry additions
+      expect(industries).toContain('culinary-hospitality');
+      expect(industries).toContain('education');
+      expect(industries).toContain('construction');
+      expect(industries).toContain('agriculture');
+      expect(industries).toContain('automotive');
+      expect(industries).toContain('aviation');
+      expect(industries).toContain('fitness-wellness');
+      expect(industries).toContain('sales-marketing');
+      expect(industries).toContain('human-resources');
+      expect(industries).toContain('legal');
+      expect(industries).toContain('arts-creative');
+      expect(industries).toContain('engineering');
+      expect(industries).toContain('accounting');
+      expect(industries).toContain('manufacturing');
+      expect(industries).toContain('logistics');
+      expect(industries).toContain('public-relations');
     });
 
     it('should have valid structure for all entries', () => {

@@ -92,16 +92,8 @@ export async function POST(request: Request) {
     // 3b. Extract full profile (for response only — NOT auto-saved to profile sections)
     // Users fill work experience, education, and certifications manually in My Profile
     console.log("[resume/parse] Step 3b: Extracting structured profile for response...");
-    let resumeProfile = await extractResumeProfile(rawText);
-    
-    // 3c. If AI profile extraction returned empty, use local fallback
-    if (resumeProfile.experience.length === 0 && resumeProfile.education.length === 0 && resumeProfile.certifications.length === 0) {
-      console.log("[resume/parse] AI profile extraction returned empty, using local fallback");
-      resumeProfile = extractProfileLocally(rawText);
-      console.log("[resume/parse] Local profile extraction:", resumeProfile.experience.length, "experiences,", resumeProfile.education.length, "education,", resumeProfile.certifications.length, "certifications");
-    } else {
-      console.log("[resume/parse] Step 3b done:", resumeProfile.projects.length, "projects,", resumeProfile.experience.length, "experiences");
-    }
+    const resumeProfile = await extractResumeProfile(rawText);
+    console.log("[resume/parse] Step 3b done:", resumeProfile.projects.length, "projects,", resumeProfile.experience.length, "experiences");
 
     // 4. Upsert skill_profile record — only save resume file path and raw text
     // Work experience, education, and certifications are entered manually by the user
@@ -131,85 +123,6 @@ export async function POST(request: Request) {
         } satisfies ResumeParseResponse,
         { status: 500 }
       );
-    }
-
-    // 4b. Conditionally auto-populate profile data from extractResumeProfile()
-    // Only fills fields that are currently empty/null/[] — never overwrites manual entries
-    if (resumeProfile) {
-      try {
-        // Fetch the user's existing profile record to check current data
-        const { data: existingProfile } = await supabase
-          .from("skill_profiles")
-          .select("work_experience, education, certifications")
-          .eq("user_id", user_id)
-          .single();
-
-        // Helper: check if a field is empty (null, undefined, or empty array)
-        const isEmpty = (field: unknown): boolean => {
-          if (field === null || field === undefined) return true;
-          if (Array.isArray(field) && field.length === 0) return true;
-          return false;
-        };
-
-        // Build an update object only for fields that are currently empty
-        const profileUpdate: Record<string, unknown> = {};
-
-        // Auto-populate work_experience if empty and resume has experience data
-        if (isEmpty(existingProfile?.work_experience) && resumeProfile.experience.length > 0) {
-          profileUpdate.work_experience = resumeProfile.experience.map((exp, idx) => ({
-            id: `resume-exp-${idx}-${Date.now()}`,
-            title: exp.title,
-            company: exp.organization,
-            startDate: exp.duration.split(/\s*[-–—]\s*/)[0]?.trim() || "",
-            endDate: exp.duration.split(/\s*[-–—]\s*/)[1]?.trim() || "",
-            isCurrent: /present|current/i.test(exp.duration),
-            description: exp.highlights.join(". "),
-          }));
-        }
-
-        // Auto-populate education if empty and resume has education data
-        if (isEmpty(existingProfile?.education) && resumeProfile.education.length > 0) {
-          profileUpdate.education = resumeProfile.education.map((edu, idx) => ({
-            id: `resume-edu-${idx}-${Date.now()}`,
-            degree: edu.degree,
-            institution: edu.institution,
-            fieldOfStudy: "",
-            graduationYear: edu.year,
-          }));
-        }
-
-        // Auto-populate certifications if empty and resume has certifications data
-        if (isEmpty(existingProfile?.certifications) && resumeProfile.certifications.length > 0) {
-          profileUpdate.certifications = resumeProfile.certifications.map((cert, idx) => ({
-            id: `resume-cert-${idx}-${Date.now()}`,
-            name: cert,
-            issuer: "",
-            date: "",
-          }));
-        }
-
-        // Only update if there are fields to populate
-        if (Object.keys(profileUpdate).length > 0) {
-          console.log("[resume/parse] Step 4b: Auto-populating empty profile fields:", Object.keys(profileUpdate));
-          const { error: profileUpdateError } = await supabase
-            .from("skill_profiles")
-            .update({
-              ...profileUpdate,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("user_id", user_id);
-
-          if (profileUpdateError) {
-            // Non-fatal: log but continue — skills are still saved
-            console.error("[resume/parse] Step 4b: Profile auto-populate failed:", profileUpdateError);
-          }
-        } else {
-          console.log("[resume/parse] Step 4b: All profile fields already have data, skipping auto-populate");
-        }
-      } catch (autoPopulateError) {
-        // Non-fatal: auto-population is a convenience, not critical
-        console.error("[resume/parse] Step 4b: Auto-populate error:", autoPopulateError);
-      }
     }
 
     // 5. Remove previous resume-parsed skills before inserting new ones
@@ -338,52 +251,21 @@ async function extractTextFromFile(
 
 /**
  * Basic PDF text extraction using pdf-parse library.
- * Note: pdf-parse v1.1.1 has a known issue where it tries to load a test file
- * on import in bundled environments. We handle this by catching errors and
- * passing a custom pagerender to avoid the test file dependency.
  */
 async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   try {
-    // pdf-parse requires a Buffer and options
-    // Use dynamic import with default export
-    const pdfParse = (await import("pdf-parse")).default;
-    const data = await pdfParse(buffer, {
-      // Prevent pdf-parse from trying to load test files
-      max: 0, // no page limit
-    });
+    const pdf = (await import("pdf-parse")).default;
+    const data = await pdf(buffer);
     return data.text?.trim() ?? "";
   } catch (error) {
-    console.error("[resume/parse] PDF parse error:", error);
-    
-    // Second attempt: try reading the buffer directly with pdf-parse's underlying pdfjs
-    try {
-      const pdfParse = (await import("pdf-parse")).default;
-      // Some PDFs need the buffer passed as Uint8Array
-      const uint8 = new Uint8Array(buffer);
-      const data = await pdfParse(Buffer.from(uint8));
-      if (data.text?.trim()) {
-        return data.text.trim();
-      }
-    } catch (retryError) {
-      console.error("[resume/parse] PDF parse retry failed:", retryError);
-    }
-
-    // Final fallback: extract printable character sequences from binary
-    // This handles cases where pdf-parse completely fails (e.g., corrupted PDFs)
+    console.error("PDF parse error:", error);
+    // Fallback: extract printable character sequences from binary
     const content = buffer.toString("latin1");
     const printableRegex = /[\x20-\x7E]{4,}/g;
     const segments: string[] = [];
     let match;
     while ((match = printableRegex.exec(content)) !== null) {
-      // Filter out common PDF operators and noise
-      const segment = match[0];
-      if (
-        segment.length > 10 &&
-        /[a-zA-Z]{3,}/.test(segment) &&
-        !/^(endobj|endstream|stream|xref|trailer|startxref)/.test(segment)
-      ) {
-        segments.push(segment);
-      }
+      segments.push(match[0]);
     }
     return segments.join(" ").trim();
   }
@@ -450,7 +332,7 @@ PROFICIENCY ASSESSMENT RULES:
 - "intermediate": The person used this skill in projects, coursework, or 1-2 years of experience, or it's listed in their skills section with demonstrated use
 - "beginner": The skill is only listed without evidence of use, mentioned in passing, or associated with certifications/seminars only
 
-SKILL CATEGORIES TO LOOK FOR:
+SKILL CATEGORIES TO LOOK FOR (ALL INDUSTRIES):
 - Programming languages (C++, Python, Java, JavaScript, etc.)
 - Frontend frameworks/libraries (React, Next.js, Vue, Angular, Tailwind CSS, etc.)
 - Backend frameworks (Flask, Django, Spring Boot, Node.js, Express, etc.)
@@ -459,18 +341,24 @@ SKILL CATEGORIES TO LOOK FOR:
 - DevOps/Cloud (Docker, AWS, CI/CD, Git, etc.)
 - Design tools (Figma, Canva, Adobe XD, etc.)
 - Testing (Manual Testing, Unit Testing, Cross-Browser Testing, etc.)
+- Culinary/Hospitality (Knife Skills, Menu Planning, Food Safety, HACCP, ServSafe, Pastry Arts, Garde Manger, Wine Pairing, etc.)
+- Education/Teaching (Curriculum Development, Lesson Planning, Classroom Management, etc.)
+- Construction/Trades (Blueprint Reading, Welding, Plumbing, Electrical, HVAC, Carpentry, etc.)
+- Healthcare/Medical (Patient Care, Nursing, Phlebotomy, Medical Coding, Physical Therapy, etc.)
+- Engineering (AutoCAD, SolidWorks, Structural Analysis, PLC Programming, Six Sigma, etc.)
+- Automotive (Engine Diagnostics, Brake Systems, ASE Certification, OBD Diagnostics, etc.)
+- Agriculture (Crop Management, Irrigation, Livestock Management, Organic Farming, etc.)
+- Aviation (Flight Operations, Aircraft Maintenance, Air Traffic Control, etc.)
+- Fitness/Wellness (Personal Training, Yoga, Sports Nutrition, CPR/AED, etc.)
+- Sales/Marketing (CRM, SEO, Digital Marketing, Lead Generation, PPC, etc.)
+- Human Resources (Talent Acquisition, Employee Relations, HRIS, Onboarding, etc.)
+- Legal (Legal Research, Contract Drafting, Litigation, Compliance, etc.)
+- Accounting/Finance (Financial Reporting, Tax Preparation, QuickBooks, Auditing, SAP, etc.)
+- Arts/Creative (Graphic Design, Photography, Video Production, Animation, etc.)
+- Manufacturing (CNC Machining, ISO 9001, Lean Manufacturing, Quality Control, etc.)
+- Logistics/Supply Chain (Freight Management, Procurement, Fleet Management, etc.)
 - Soft skills (Leadership, Communication, Problem-Solving, Team Collaboration, etc.)
 - Other tools (Excel, Google Suite, Microsoft Office, etc.)
-- Culinary Arts (Food Safety, Menu Planning, Kitchen Management, HACCP, ServSafe, Pastry Arts, etc.)
-- Healthcare/Nursing (Patient Care, CPR, Medication Administration, HIPAA, EHR, Phlebotomy, etc.)
-- Education/Teaching (Curriculum Development, Classroom Management, Lesson Planning, Special Education, etc.)
-- Skilled Trades (HVAC, Plumbing, Electrical Wiring, Blueprint Reading, Welding, Carpentry, etc.)
-- Hospitality/Tourism (Event Planning, Front of House, Hospitality Management, POS Systems, Catering, etc.)
-- Business/Finance/Accounting (Accounting, Bookkeeping, Financial Analysis, QuickBooks, Budgeting, Payroll, etc.)
-- Marketing/Sales (Digital Marketing, SEO, SEM, Content Strategy, CRM, Brand Management, Lead Generation, etc.)
-- Legal (Contract Law, Legal Research, Compliance, Paralegal, Litigation, Case Management, etc.)
-- Agriculture (Crop Management, Irrigation, Pest Control, Farm Equipment, Soil Science, Agronomy, etc.)
-- Transportation/Logistics (Fleet Management, Supply Chain, Warehousing, CDL, Route Planning, Freight, etc.)
 
 Return a JSON array. Example:
 [
@@ -485,7 +373,7 @@ RESUME TEXT:
 ${resumeText}
 ---
 
-Extract ALL skills now. Be comprehensive.`;
+Extract ALL skills now. Be comprehensive and industry-aware.`;
 
   try {
     const content = await callGemini(systemPrompt, userPrompt, { temperature: 0.1, maxTokens: 3000 });
@@ -881,7 +769,7 @@ function extractProfileLocally(rawText: string): ResumeProfile {
  * 4. Skills where the person led/taught others → advanced/expert
  * 5. Skills only in certifications/seminars → beginner
  */
-export function extractSkillsLocally(
+function extractSkillsLocally(
   resumeText: string
 ): Array<{ name: string; proficiency_level: "beginner" | "intermediate" | "advanced" | "expert" }> {
   const text = resumeText.toLowerCase();
@@ -894,7 +782,7 @@ export function extractSkillsLocally(
   const skillDB: Array<{ name: string; patterns: RegExp[] }> = [
     // Programming languages
     { name: "C++", patterns: [/\bc\+\+\b/, /\bcpp\b/] },
-    { name: "C", patterns: [/\bc\b(?![\+#s])/i, /\bc,/, /\bc language/] },
+    { name: "C", patterns: [/\bc\s+programming\b/, /\bc\s+language\b/, /\bansi\s*c\b/, /\b(?:languages?|skills?):\s*[^,]*\bc\b/i] },
     { name: "Java", patterns: [/\bjava\b(?!script)/] },
     { name: "JavaScript", patterns: [/\bjavascript\b/, /\bjs\b/] },
     { name: "Python", patterns: [/\bpython\b/] },
@@ -994,89 +882,191 @@ export function extractSkillsLocally(
     { name: "Microsoft Teams", patterns: [/\bteams\b/] },
     { name: "Outlook", patterns: [/\boutlook\b/] },
 
-    // Culinary/Hospitality
-    { name: "Food Safety", patterns: [/\bfood\s*safety\b/i] },
-    { name: "Menu Planning", patterns: [/\bmenu\s*planning\b/i, /\bmenu\s*design\b/i, /\bmenu\s*development\b/i] },
-    { name: "Kitchen Management", patterns: [/\bkitchen\s*management\b/i, /\bkitchen\s*operations?\b/i] },
-    { name: "HACCP", patterns: [/\bhaccp\b/i] },
-    { name: "ServSafe", patterns: [/\bservsafe\b/i, /\bserv\s*safe\b/i] },
-    { name: "Pastry Arts", patterns: [/\bpastry\s*arts?\b/i, /\bpastry\s*chef\b/i, /\bbaking\b/i] },
-    { name: "Catering", patterns: [/\bcatering\b/i] },
-    { name: "Hospitality Management", patterns: [/\bhospitality\s*management\b/i, /\bhospitality\b/i] },
-    { name: "Event Planning", patterns: [/\bevent\s*planning\b/i, /\bevent\s*management\b/i, /\bevent\s*coordination\b/i] },
-    { name: "Front of House", patterns: [/\bfront\s*of\s*house\b/i, /\bfoh\b/i] },
-    { name: "POS Systems", patterns: [/\bpos\s*system/i, /\bpoint\s*of\s*sale\b/i] },
-    { name: "Culinary Arts", patterns: [/\bculinary\s*arts?\b/i, /\bculinary\b/i] },
-    { name: "Food Preparation", patterns: [/\bfood\s*prep/i, /\bfood\s*preparation\b/i] },
-    { name: "Inventory Management", patterns: [/\binventory\s*management\b/i, /\binventory\s*control\b/i, /\bstock\s*management\b/i] },
+    // ─── Culinary & Hospitality ─────────────────────────────────────────
+    { name: "Knife Skills", patterns: [/\bknife\s*skills?\b/, /\bknife\s*techniques?\b/, /\bknife\s*handling\b/] },
+    { name: "Menu Planning", patterns: [/\bmenu\s*(planning|development|design|creation|engineering)\b/] },
+    { name: "Food Safety", patterns: [/\bfood\s*safety\b/, /\bfood\s*hygiene\b/, /\bfood\s*sanitation\b/] },
+    { name: "HACCP", patterns: [/\bhaccp\b/, /\bhazard\s*analysis\b/] },
+    { name: "ServSafe", patterns: [/\bservsafe\b/] },
+    { name: "Pastry Arts", patterns: [/\bpastry\b/, /\bbaking\b/, /\bpatisserie\b/] },
+    { name: "Garde Manger", patterns: [/\bgarde\s*manger\b/, /\bcold\s*kitchen\b/] },
+    { name: "Culinary Arts", patterns: [/\bculinary\b/, /\bcookery\b/, /\bcooking\s*(skills?|techniques?)\b/] },
+    { name: "Kitchen Management", patterns: [/\bkitchen\s*management\b/, /\bkitchen\s*operations?\b/, /\bback\s*of\s*house\b/] },
+    { name: "Food Plating", patterns: [/\bfood\s*plating\b/, /\bfood\s*presentation\b/, /\bplating\s*techniques?\b/, /\bgarnishing\b/] },
+    { name: "Grilling", patterns: [/\bgrilling\b/, /\bgrill\s*cooking\b/, /\bbbq\b/, /\bbarbecue\b/] },
+    { name: "Butchery", patterns: [/\bbutchery\b/, /\bmeat\s*cutting\b/, /\bmeat\s*fabrication\b/] },
+    { name: "Sous Vide", patterns: [/\bsous\s*vide\b/] },
+    { name: "Catering", patterns: [/\bcatering\b/] },
+    { name: "Wine Pairing", patterns: [/\bwine\s*pairing\b/, /\bsommelier\b/, /\bwine\s*(knowledge|service)\b/] },
+    { name: "Nutrition Planning", patterns: [/\bnutrition\s*(planning|analysis)\b/, /\bmeal\s*planning\b/, /\bdietary\s*planning\b/] },
+    { name: "Banquet Management", patterns: [/\bbanquet\b/] },
+    { name: "Food Allergen Management", patterns: [/\ballergen\b/, /\bfood\s*allerg/] },
+    { name: "Hotel Management", patterns: [/\bhotel\s*management\b/, /\bhospitality\s*management\b/] },
+    { name: "Barista Skills", patterns: [/\bbarista\b/, /\blatte\s*art\b/, /\bespresso\b/] },
+    { name: "Mixology", patterns: [/\bmixology\b/, /\bbartending\b/, /\bcocktail\b/] },
+    { name: "Inventory Management", patterns: [/\binventory\s*(management|control|tracking)\b/, /\bstock\s*(management|control)\b/] },
+    { name: "Cost Control", patterns: [/\bcost\s*control\b/, /\bfood\s*cost\b/, /\bcost\s*(management|reduction)\b/] },
 
-    // Healthcare/Nursing
-    { name: "Patient Care", patterns: [/\bpatient\s*care\b/i] },
-    { name: "Medication Administration", patterns: [/\bmedication\s*administration\b/i, /\bmed\s*admin/i] },
-    { name: "Vital Signs", patterns: [/\bvital\s*signs?\b/i, /\bvitals\b/i] },
-    { name: "CPR", patterns: [/\bcpr\b/i, /\bcardiopulmonary\s*resuscitation\b/i] },
-    { name: "HIPAA Compliance", patterns: [/\bhipaa\b/i, /\bhipaa\s*compliance\b/i] },
-    { name: "Electronic Health Records (EHR)", patterns: [/\behr\b/i, /\belectronic\s*health\s*records?\b/i, /\belectronic\s*medical\s*records?\b/i, /\bemr\b/i] },
-    { name: "Phlebotomy", patterns: [/\bphlebotomy\b/i, /\bblood\s*draw/i, /\bvenipuncture\b/i] },
-    { name: "Wound Care", patterns: [/\bwound\s*care\b/i, /\bwound\s*management\b/i] },
-    { name: "Triage", patterns: [/\btriage\b/i] },
-    { name: "Nursing Assessment", patterns: [/\bnursing\s*assessment\b/i, /\bpatient\s*assessment\b/i] },
-    { name: "First Aid", patterns: [/\bfirst\s*aid\b/i] },
-    { name: "Medical Terminology", patterns: [/\bmedical\s*terminology\b/i] },
+    // ─── Education & Teaching ───────────────────────────────────────────
+    { name: "Curriculum Development", patterns: [/\bcurriculum\s*(development|design|planning)\b/] },
+    { name: "Lesson Planning", patterns: [/\blesson\s*plan/] },
+    { name: "Classroom Management", patterns: [/\bclassroom\s*management\b/] },
+    { name: "Differentiated Instruction", patterns: [/\bdifferentiated\s*(instruction|learning)\b/] },
+    { name: "Special Education", patterns: [/\bspecial\s*education\b/, /\bsped\b/, /\biep\b/] },
+    { name: "E-Learning", patterns: [/\be[\s-]*learning\b/, /\bonline\s*teaching\b/, /\blms\b/] },
+    { name: "Student Counseling", patterns: [/\bstudent\s*counsel/, /\bacademic\s*counseling\b/] },
+    { name: "Tutoring", patterns: [/\btutoring\b/] },
+    { name: "STEM Education", patterns: [/\bstem\s*(education|teaching)\b/] },
 
-    // Education/Teaching
-    { name: "Curriculum Development", patterns: [/\bcurriculum\s*development\b/i, /\bcurriculum\s*design\b/i] },
-    { name: "Classroom Management", patterns: [/\bclassroom\s*management\b/i] },
-    { name: "Lesson Planning", patterns: [/\blesson\s*planning\b/i, /\blesson\s*plans?\b/i] },
-    { name: "Special Education", patterns: [/\bspecial\s*education\b/i, /\bsped\b/i, /\bspecial\s*needs\b/i] },
-    { name: "Differentiated Instruction", patterns: [/\bdifferentiated\s*instruction\b/i, /\bdifferentiated\s*learning\b/i] },
-    { name: "Student Assessment", patterns: [/\bstudent\s*assessment\b/i, /\bformative\s*assessment\b/i, /\bsummative\s*assessment\b/i] },
-    { name: "IEP Development", patterns: [/\biep\b/i, /\bindividualized\s*education\s*program\b/i, /\bindividualized\s*education\s*plan\b/i] },
-    { name: "Educational Technology", patterns: [/\beducational\s*technology\b/i, /\bedtech\b/i, /\bed\s*tech\b/i] },
-    { name: "Tutoring", patterns: [/\btutoring\b/i, /\btutor\b/i] },
-    { name: "Academic Advising", patterns: [/\bacademic\s*advising\b/i, /\bacademic\s*advisor\b/i, /\bacademic\s*counseling\b/i] },
+    // ─── Construction & Trades ──────────────────────────────────────────
+    { name: "Blueprint Reading", patterns: [/\bblueprint\s*reading\b/, /\btechnical\s*drawings?\b/] },
+    { name: "Welding", patterns: [/\bwelding\b/, /\bmig\s*welding\b/, /\btig\s*welding\b/] },
+    { name: "Plumbing", patterns: [/\bplumbing\b/, /\bpipe\s*fitting\b/] },
+    { name: "Electrical Wiring", patterns: [/\belectrical\s*(wiring|installation|systems)\b/] },
+    { name: "Carpentry", patterns: [/\bcarpentry\b/, /\bwoodworking\b/] },
+    { name: "HVAC", patterns: [/\bhvac\b/, /\bheating\s*ventilation\b/] },
+    { name: "Heavy Equipment Operation", patterns: [/\bheavy\s*equipment\b/, /\bcrane\s*operat/, /\bforklift\b/] },
+    { name: "OSHA Compliance", patterns: [/\bosha\b/] },
+    { name: "Roofing", patterns: [/\broofing\b/] },
+    { name: "Concrete Work", patterns: [/\bconcrete\b/, /\bmasonry\b/] },
+    { name: "Drywall", patterns: [/\bdrywall\b/, /\bplastering\b/] },
 
-    // Skilled Trades
-    { name: "HVAC", patterns: [/\bhvac\b/i, /\bheating\s*(,?\s*ventilation)?\s*(,?\s*and)?\s*air\s*conditioning\b/i] },
-    { name: "Plumbing", patterns: [/\bplumbing\b/i, /\bplumber\b/i] },
-    { name: "Electrical Wiring", patterns: [/\belectrical\s*wiring\b/i, /\belectrical\s*installation\b/i, /\bwiring\b/i] },
-    { name: "Blueprint Reading", patterns: [/\bblueprint\s*reading\b/i, /\bblueprints?\b/i, /\bschematic\s*reading\b/i] },
-    { name: "Welding", patterns: [/\bwelding\b/i, /\bwelder\b/i, /\bmig\s*welding\b/i, /\btig\s*welding\b/i] },
-    { name: "Automotive Repair", patterns: [/\bautomotive\s*repair\b/i, /\bauto\s*repair\b/i, /\bautomotive\s*maintenance\b/i, /\bvehicle\s*repair\b/i] },
-    { name: "Carpentry", patterns: [/\bcarpentry\b/i, /\bcarpenter\b/i, /\bwoodworking\b/i] },
-    { name: "Masonry", patterns: [/\bmasonry\b/i, /\bmason\b/i, /\bbricklaying\b/i, /\bbricklayer\b/i] },
-    { name: "Safety Compliance", patterns: [/\bsafety\s*compliance\b/i, /\bsafety\s*regulations?\b/i, /\bworkplace\s*safety\b/i] },
-    { name: "OSHA", patterns: [/\bosha\b/i] },
-    { name: "Forklift Operation", patterns: [/\bforklift\s*operat/i, /\bforklift\s*certif/i, /\bforklift\b/i] },
-    { name: "CNC Machining", patterns: [/\bcnc\s*machin/i, /\bcnc\b/i, /\bcomputer\s*numerical\s*control\b/i] },
+    // ─── Agriculture ────────────────────────────────────────────────────
+    { name: "Crop Management", patterns: [/\bcrop\s*(management|production|cultivation)\b/, /\bagronomy\b/] },
+    { name: "Irrigation Systems", patterns: [/\birrigation\b/] },
+    { name: "Pest Management", patterns: [/\bpest\s*(management|control)\b/, /\bipm\b/] },
+    { name: "Livestock Management", patterns: [/\blivestock\b/, /\banimal\s*husbandry\b/] },
+    { name: "Organic Farming", patterns: [/\borganic\s*(farming|agriculture)\b/] },
+    { name: "Greenhouse Management", patterns: [/\bgreenhouse\b/] },
+    { name: "Aquaculture", patterns: [/\baquaculture\b/, /\bfish\s*farming\b/] },
 
-    // Business/Finance
-    { name: "Accounting", patterns: [/\baccounting\b/i, /\baccountant\b/i] },
-    { name: "Bookkeeping", patterns: [/\bbookkeeping\b/i, /\bbookkeeper\b/i] },
-    { name: "Financial Analysis", patterns: [/\bfinancial\s*analysis\b/i, /\bfinancial\s*analyst\b/i] },
-    { name: "Budgeting", patterns: [/\bbudgeting\b/i, /\bbudget\s*management\b/i] },
-    { name: "QuickBooks", patterns: [/\bquickbooks\b/i, /\bquick\s*books\b/i] },
-    { name: "Payroll", patterns: [/\bpayroll\b/i, /\bpayroll\s*processing\b/i] },
-    { name: "Tax Preparation", patterns: [/\btax\s*preparation\b/i, /\btax\s*prep\b/i, /\btax\s*filing\b/i] },
-    { name: "Auditing", patterns: [/\bauditing\b/i, /\bauditor\b/i, /\baudit\b/i] },
-    { name: "Compliance", patterns: [/\bcompliance\b/i, /\bregulatory\s*compliance\b/i] },
-    { name: "Financial Reporting", patterns: [/\bfinancial\s*reporting\b/i, /\bfinancial\s*statements?\b/i] },
-    { name: "Accounts Payable", patterns: [/\baccounts\s*payable\b/i, /\ba\/p\b/i, /\bap\b/i] },
-    { name: "Accounts Receivable", patterns: [/\baccounts\s*receivable\b/i, /\ba\/r\b/i, /\bar\b/i] },
+    // ─── Automotive ─────────────────────────────────────────────────────
+    { name: "Engine Diagnostics", patterns: [/\bengine\s*(diagnostics?|repair|troubleshoot)/, /\bmotor\s*diagnostics?\b/] },
+    { name: "Brake Systems", patterns: [/\bbrake\s*(systems?|repair|maintenance)\b/] },
+    { name: "Transmission Repair", patterns: [/\btransmission\s*(repair|service)\b/] },
+    { name: "ASE Certification", patterns: [/\base\s*(certif|certified|master)\b/] },
+    { name: "OBD Diagnostics", patterns: [/\bobd\b/, /\bscan\s*tool\b/, /\bvehicle\s*diagnostics?\b/] },
+    { name: "Auto Body Repair", patterns: [/\bauto\s*body\b/, /\bcollision\s*repair\b/] },
+    { name: "Hybrid/EV Technology", patterns: [/\bhybrid\b.*\b(vehicle|technology|systems?)\b/, /\belectric\s*vehicle\b/, /\bev\s*(systems?|maintenance|technology)\b/] },
 
-    // Marketing/Sales
-    { name: "Digital Marketing", patterns: [/\bdigital\s*marketing\b/i] },
-    { name: "SEO", patterns: [/\bseo\b/i, /\bsearch\s*engine\s*optimization\b/i] },
-    { name: "SEM", patterns: [/\bsem\b/i, /\bsearch\s*engine\s*marketing\b/i] },
-    { name: "Social Media Marketing", patterns: [/\bsocial\s*media\s*marketing\b/i, /\bsmm\b/i, /\bsocial\s*media\s*strategy\b/i] },
-    { name: "Content Strategy", patterns: [/\bcontent\s*strategy\b/i, /\bcontent\s*marketing\b/i] },
-    { name: "Copywriting", patterns: [/\bcopywriting\b/i, /\bcopywriter\b/i] },
-    { name: "CRM (Salesforce)", patterns: [/\bsalesforce\b/i] },
-    { name: "CRM (HubSpot)", patterns: [/\bhubspot\b/i, /\bhub\s*spot\b/i] },
-    { name: "Market Research", patterns: [/\bmarket\s*research\b/i, /\bmarket\s*analysis\b/i] },
-    { name: "Brand Management", patterns: [/\bbrand\s*management\b/i, /\bbranding\b/i] },
-    { name: "Lead Generation", patterns: [/\blead\s*generation\b/i, /\blead\s*gen\b/i] },
-    { name: "Email Marketing", patterns: [/\bemail\s*marketing\b/i, /\bemail\s*campaigns?\b/i] },
+    // ─── Aviation ───────────────────────────────────────────────────────
+    { name: "Flight Operations", patterns: [/\bflight\s*operations?\b/, /\bflight\s*planning\b/] },
+    { name: "Aircraft Maintenance", patterns: [/\baircraft\s*maintenance\b/, /\ba&p\s*mechanic\b/] },
+    { name: "Air Traffic Control", patterns: [/\bair\s*traffic\s*control\b/, /\batc\b/] },
+    { name: "Aviation Safety", patterns: [/\baviation\s*safety\b/, /\bflight\s*safety\b/] },
+    { name: "Avionics", patterns: [/\bavionics\b/] },
+
+    // ─── Fitness & Wellness ─────────────────────────────────────────────
+    { name: "Personal Training", patterns: [/\bpersonal\s*train/, /\bfitness\s*coach/] },
+    { name: "Group Fitness", patterns: [/\bgroup\s*(fitness|exercise|classes)\b/] },
+    { name: "Yoga Instruction", patterns: [/\byoga\b/] },
+    { name: "Sports Nutrition", patterns: [/\bsports\s*nutrition\b/, /\bnutrition\s*coach/] },
+    { name: "CPR/AED", patterns: [/\bcpr\b/, /\baed\b/, /\bbls\s*certif/] },
+    { name: "Pilates", patterns: [/\bpilates\b/] },
+    { name: "CrossFit", patterns: [/\bcrossfit\b/] },
+    { name: "Massage Therapy", patterns: [/\bmassage\s*therap/, /\blmt\b/] },
+
+    // ─── Sales & Marketing ──────────────────────────────────────────────
+    { name: "CRM", patterns: [/\bcrm\b/, /\bsalesforce\b/, /\bhubspot\b/] },
+    { name: "Digital Marketing", patterns: [/\bdigital\s*marketing\b/, /\bonline\s*marketing\b/] },
+    { name: "SEO", patterns: [/\bseo\b/, /\bsearch\s*engine\s*optimization\b/] },
+    { name: "Social Media Marketing", patterns: [/\bsocial\s*media\s*(marketing|management|strategy)\b/] },
+    { name: "Content Marketing", patterns: [/\bcontent\s*(marketing|strategy|creation)\b/, /\bcopywriting\b/] },
+    { name: "Email Marketing", patterns: [/\bemail\s*(marketing|campaigns?)\b/] },
+    { name: "Lead Generation", patterns: [/\blead\s*(generation|gen)\b/, /\bprospecting\b/] },
+    { name: "Google Analytics", patterns: [/\bgoogle\s*analytics\b/, /\bga4\b/] },
+    { name: "PPC Advertising", patterns: [/\bppc\b/, /\bpay\s*per\s*click\b/, /\bgoogle\s*ads\b/] },
+    { name: "Brand Management", patterns: [/\bbrand\s*(management|strategy|development)\b/] },
+    { name: "Market Research", patterns: [/\bmarket\s*research\b/, /\bmarket\s*analysis\b/] },
+
+    // ─── Human Resources ────────────────────────────────────────────────
+    { name: "Talent Acquisition", patterns: [/\btalent\s*acquisition\b/, /\brecruit/] },
+    { name: "Employee Relations", patterns: [/\bemployee\s*relations\b/, /\blabor\s*relations\b/] },
+    { name: "Performance Management", patterns: [/\bperformance\s*(management|review|appraisal)\b/] },
+    { name: "HRIS", patterns: [/\bhris\b/, /\bworkday\b/, /\bbamboohr\b/] },
+    { name: "Onboarding", patterns: [/\bonboarding\b/] },
+    { name: "Training & Development", patterns: [/\btraining\s*(and|&)\s*development\b/, /\bl&d\b/] },
+    { name: "Compensation & Benefits", patterns: [/\bcompensation\s*(and|&)\s*benefits\b/, /\bpayroll\b/] },
+
+    // ─── Legal ──────────────────────────────────────────────────────────
+    { name: "Legal Research", patterns: [/\blegal\s*research\b/, /\bwestlaw\b/, /\blexisnexis\b/] },
+    { name: "Contract Drafting", patterns: [/\bcontract\s*(drafting|writing|preparation)\b/] },
+    { name: "Litigation", patterns: [/\blitigation\b/] },
+    { name: "Compliance Management", patterns: [/\bcompliance\s*(management|officer)\b/, /\bregulatory\s*compliance\b/] },
+    { name: "Intellectual Property", patterns: [/\bintellectual\s*property\b/, /\bip\s*law\b/, /\bpatent\b/, /\btrademark\b/] },
+    { name: "Paralegal Skills", patterns: [/\bparalegal\b/] },
+
+    // ─── Engineering (Non-Software) ─────────────────────────────────────
+    { name: "AutoCAD", patterns: [/\bautocad\b/, /\bauto\s*cad\b/] },
+    { name: "SolidWorks", patterns: [/\bsolidworks\b/, /\bsolid\s*works\b/] },
+    { name: "CATIA", patterns: [/\bcatia\b/] },
+    { name: "Quality Control", patterns: [/\bquality\s*control\b/, /\bsix\s*sigma\b/] },
+    { name: "Lean Manufacturing", patterns: [/\blean\s*manufacturing\b/, /\bkaizen\b/, /\blean\s*six\s*sigma\b/] },
+    { name: "PLC Programming", patterns: [/\bplc\b/, /\bscada\b/, /\bladder\s*logic\b/] },
+    { name: "Robotics", patterns: [/\brobotics\b/, /\brobot\s*programming\b/] },
+    { name: "Structural Analysis", patterns: [/\bstructural\s*analysis\b/, /\bfea\b/, /\bfinite\s*element\b/] },
+
+    // ─── Accounting & Finance ───────────────────────────────────────────
+    { name: "Financial Reporting", patterns: [/\bfinancial\s*reporting\b/, /\bgaap\b/, /\bifrs\b/] },
+    { name: "Tax Preparation", patterns: [/\btax\s*(preparation|filing|planning|compliance)\b/] },
+    { name: "Auditing", patterns: [/\bauditing\b/, /\baudit\s*(procedures?|internal|external)\b/] },
+    { name: "Bookkeeping", patterns: [/\bbookkeeping\b/, /\baccounts\s*(payable|receivable)\b/] },
+    { name: "QuickBooks", patterns: [/\bquickbooks\b/] },
+    { name: "SAP", patterns: [/\bsap\b(?!\s*(?:ling|phire))/] },
+    { name: "Budget Management", patterns: [/\bbudget\s*(management|planning|forecasting)\b/, /\bbudgeting\b/] },
+    { name: "Financial Analysis", patterns: [/\bfinancial\s*(analysis|modeling|forecasting)\b/] },
+
+    // ─── Healthcare Clinical ────────────────────────────────────────────
+    { name: "Patient Care", patterns: [/\bpatient\s*care\b/, /\bbedside\s*care\b/] },
+    { name: "Nursing", patterns: [/\bnursing\b/, /\bregistered\s*nurse\b/, /\brn\b/] },
+    { name: "Phlebotomy", patterns: [/\bphlebotomy\b/, /\bvenipuncture\b/] },
+    { name: "Medical Coding", patterns: [/\bmedical\s*coding\b/, /\bicd[\s-]*10\b/, /\bcpt\s*coding\b/] },
+    { name: "Physical Therapy", patterns: [/\bphysical\s*therapy\b/, /\bphysiotherapy\b/] },
+    { name: "Radiology", patterns: [/\bradiology\b/, /\bradiography\b/] },
+    { name: "Vital Signs", patterns: [/\bvital\s*signs?\b/] },
+    { name: "Infection Control", patterns: [/\binfection\s*control\b/, /\bsterile\s*technique\b/] },
+
+    // ─── Manufacturing ──────────────────────────────────────────────────
+    { name: "CNC Machining", patterns: [/\bcnc\b/] },
+    { name: "ISO 9001", patterns: [/\biso\s*9001\b/, /\biso\s*certification\b/] },
+    { name: "5S Methodology", patterns: [/\b5s\b/] },
+    { name: "Production Planning", patterns: [/\bproduction\s*(planning|scheduling)\b/] },
+    { name: "Warehouse Management", patterns: [/\bwarehouse\s*(management|operations|logistics)\b/] },
+
+    // ─── Logistics & Supply Chain ───────────────────────────────────────
+    { name: "Freight Management", patterns: [/\bfreight\s*(management|forwarding)\b/] },
+    { name: "Fleet Management", patterns: [/\bfleet\s*(management|operations)\b/] },
+    { name: "Procurement", patterns: [/\bprocurement\b/, /\bpurchasing\b/, /\bsourcing\b/] },
+    { name: "Supply Chain Management", patterns: [/\bsupply\s*chain\b/] },
+    { name: "Customs Clearance", patterns: [/\bcustoms\s*(clearance|brokerage)\b/, /\bimport\s*export\b/] },
+
+    // ─── Arts & Creative ────────────────────────────────────────────────
+    { name: "Graphic Design", patterns: [/\bgraphic\s*design\b/] },
+    { name: "Photography", patterns: [/\bphotography\b/] },
+    { name: "Video Production", patterns: [/\bvideo\s*(production|editing)\b/, /\bvideography\b/] },
+    { name: "Animation", patterns: [/\banimation\b/, /\bmotion\s*graphics\b/] },
+    { name: "Illustration", patterns: [/\billustration\b/] },
+    { name: "InDesign", patterns: [/\bindesign\b/] },
+    { name: "After Effects", patterns: [/\bafter\s*effects\b/] },
+    { name: "Premiere Pro", patterns: [/\bpremiere\s*pro\b/, /\badobe\s*premiere\b/] },
+    { name: "Fashion Design", patterns: [/\bfashion\s*design\b/, /\bgarment\s*design\b/, /\bpattern\s*making\b/] },
+    { name: "Interior Design", patterns: [/\binterior\s*design\b/] },
+
+    // ─── Retail & Service ───────────────────────────────────────────────
+    { name: "Customer Service", patterns: [/\bcustomer\s*service\b/, /\bclient\s*service\b/, /\bcustomer\s*support\b/] },
+    { name: "POS Operations", patterns: [/\bpos\s*(operations?|systems?)\b/, /\bpoint\s*of\s*sale\b/, /\bcash\s*register\b/] },
+    { name: "Cash Handling", patterns: [/\bcash\s*handling\b/, /\bcash\s*management\b/, /\bcashier/] },
+    { name: "Visual Merchandising", patterns: [/\bvisual\s*merchandis/, /\bmerchandis/] },
+    { name: "Retail Management", patterns: [/\bretail\s*(management|operations?)\b/] },
+    { name: "Stock Management", patterns: [/\bstock\s*(management|control|shelving)\b/, /\bfifo\b/] },
+    { name: "Digital Payments", patterns: [/\bdigital\s*payments?\b/, /\bgcash\b/, /\bmaya\b/, /\bmobile\s*payments?\b/, /\be[\s-]*wallet/] },
+    { name: "Barcode Systems", patterns: [/\bbarcode\b/, /\bscanner\s*systems?\b/] },
+    { name: "Customer Relations", patterns: [/\bcustomer\s*relations\b/, /\bclient\s*relations\b/, /\binterpersonal\s*communication\b/] },
+    { name: "Food Service", patterns: [/\bfood\s*service\b/, /\bfood\s*handling\b/, /\bfood\s*prep/] },
+    { name: "Receipt Balancing", patterns: [/\breceipt\s*balancing\b/, /\bcash\s*balancing\b/] },
+    { name: "Store Operations", patterns: [/\bstore\s*operations?\b/, /\bfloor\s*management\b/] },
+    { name: "Loss Prevention", patterns: [/\bloss\s*prevention\b/, /\bshrinkage\b/] },
+    { name: "Upselling", patterns: [/\bupsell/, /\bcross[\s-]*sell/] },
   ];
 
   const found: Array<{ name: string; proficiency_level: "beginner" | "intermediate" | "advanced" | "expert" }> = [];
