@@ -80,13 +80,14 @@ export default function ResumeUpload({
         } = await supabase.auth.getUser();
 
         if (authError || !user) {
-          setError("You must be logged in to upload a resume.");
-          setStatus("error");
-          return;
+          // Try refreshing the session if token is invalid
+          const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError || !session?.user) {
+            setError("Session expired. Please log in again.");
+            setStatus("error");
+            return;
+          }
         }
-
-        // Build storage path: resumes/{user_id}/{filename}
-        const filePath = `${user.id}/${file.name}`;
 
         // Simulate progress for upload
         setUploadProgress(20);

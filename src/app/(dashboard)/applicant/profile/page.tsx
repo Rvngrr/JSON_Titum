@@ -72,6 +72,8 @@ export default function ApplicantProfilePage() {
           if (profile.resume_file_path) {
             const parts = (profile.resume_file_path as string).split("/");
             setResumeFilename(parts[parts.length - 1]);
+          } else {
+            setResumeFilename(null);
           }
           const prefs = profile.work_preferences as Record<string, unknown> | null;
           if (prefs?.careerGoal) setCareerGoal(prefs.careerGoal as string);
@@ -93,6 +95,17 @@ export default function ApplicantProfilePage() {
     }
     loadProfile();
   }, [skillsKey]);
+
+  // Re-fetch profile data when the page becomes visible again (e.g. navigating back)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        setSkillsKey((k) => k + 1);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
 
   const triggerMatchRecalculation = useCallback(async () => {
     try {

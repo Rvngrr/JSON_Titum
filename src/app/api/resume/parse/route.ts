@@ -92,8 +92,16 @@ export async function POST(request: Request) {
     // 3b. Extract full profile (for response only — NOT auto-saved to profile sections)
     // Users fill work experience, education, and certifications manually in My Profile
     console.log("[resume/parse] Step 3b: Extracting structured profile for response...");
-    const resumeProfile = await extractResumeProfile(rawText);
-    console.log("[resume/parse] Step 3b done:", resumeProfile.projects.length, "projects,", resumeProfile.experience.length, "experiences");
+    let resumeProfile = await extractResumeProfile(rawText);
+    
+    // 3c. If AI profile extraction returned empty, use local fallback
+    if (resumeProfile.experience.length === 0 && resumeProfile.education.length === 0 && resumeProfile.certifications.length === 0) {
+      console.log("[resume/parse] AI profile extraction returned empty, using local fallback");
+      resumeProfile = extractProfileLocally(rawText);
+      console.log("[resume/parse] Local profile extraction:", resumeProfile.experience.length, "experiences,", resumeProfile.education.length, "education,", resumeProfile.certifications.length, "certifications");
+    } else {
+      console.log("[resume/parse] Step 3b done:", resumeProfile.projects.length, "projects,", resumeProfile.experience.length, "experiences");
+    }
 
     // 4. Upsert skill_profile record — only save resume file path and raw text
     // Work experience, education, and certifications are entered manually by the user
