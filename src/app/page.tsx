@@ -399,30 +399,34 @@ export default function Home() {
               For Companies
             </p>
             <h2 className="mt-4 text-4xl font-bold text-[var(--text-primary)] md:text-5xl">
-              Hire Smarter, Faster
+              For Job Curators
             </h2>
             <p className="mt-4 max-w-2xl text-lg text-[var(--text-secondary)]">
-              Our Admin dashboard gives hiring teams AI-powered tools to find the best candidates from your applicant pool.
+              Tools for hiring teams to manage listings, import jobs, and track applicant activity.
             </p>
           </motion.div>
 
           <div className="mt-16 grid gap-8 md:grid-cols-2">
             {[
               {
-                title: "AI-Ranked Applicants",
-                description: "Automatically rank candidates by fit score against your job requirements. No more manual resume screening.",
-              },
-              {
                 title: "Job Posting Management",
-                description: "Create, edit, and manage job postings with AI-assisted requirement generation and bulk import.",
+                description: "Post and manage job listings through an intuitive dashboard.",
               },
               {
-                title: "Hiring Analytics",
-                description: "Track your hiring funnel, time-to-fill, and source effectiveness with real-time analytics dashboards.",
+                title: "Automated Job Import",
+                description: "Import real job listings automatically from JSearch and Indeed APIs.",
               },
               {
-                title: "Bulk Job Import",
-                description: "Import jobs from LinkedIn, Indeed, and other platforms directly into your dashboard via API integrations.",
+                title: "Real-Time Analytics",
+                description: "See real-time analytics: applicant activity, skill gaps, and hiring trends.",
+              },
+              {
+                title: "Applicant Distribution",
+                description: "View applicant distribution to understand if the job board needs more listings.",
+              },
+              {
+                title: "Bulk CSV Import",
+                description: "Bulk import jobs via CSV for efficient curation.",
               },
             ].map((item, i) => (
               <motion.div
